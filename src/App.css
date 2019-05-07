@@ -1,33 +1,282 @@
-.App {
+img {
+  width: 100%;
+}
+
+body {
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+.navbarcustom {
+  height: 10vh;
+  max-height: 10vh; /* height of the navbar */
+}
+
+.navbar-brand-logo {
+  background: url("./img/avl.png") no-repeat;
+  margin-left: 10px;
+  margin-right: 10px;
+  max-width: 10vw;
+  max-height: 10vh; /* height of the navbar */
+}
+
+.signup {
+  margin: 25px;
+}
+
+.sidebarlogo-area {
+  width: 30%;
+  float: left;
+  padding-bottom: 2px;
+}
+
+.mapArea {
+  float: left;
+}
+
+.mapArea-logo {
+  background: url("./img/avl.png") no-repeat;
+  width: 100%;
+  vertical-align: middle;
+}
+
+.landing {
+  position: relative;
+  background: url("./img/image.jpg") no-repeat;
+  background-size: cover;
+  background-position: center;
+  height: 85vh;
+}
+
+.map-tool-container {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: url("./img/avl.png");
+  background-size: cover;
+  background-position: center;
+  max-width: 12vw;
+  max-height: 10vh;
+  width: 100%;
+  height: 100%;
+  opacity: 0.4;
+  z-index: 100;
+  transition: width 2s, height 4s;
+}
+
+.map-tool-container:hover {
+  opacity: 1;
+}
+
+.landing-inner {
+  padding-top: 80px;
+}
+
+/* .map {
+  min-height: 90vh;
+  width: 100%;
+  top: 0;
+  bottom: 0;
+  position: absolute;
+  left: -20px;
+  background-size: cover;
+} */
+
+.map {
+  border-left: 1px solid #fff;
+  position: relative;
+  height: 100vh;
+}
+
+.pop-up {
+  background-color: rgb(139, 187, 230);
+}
+
+* {
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+}
+
+.pad2 {
+  padding: 20px;
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+}
+
+.sidebar {
+  position: relative;
+  max-height: 100vh;
+  overflow: hidden;
+  padding: 5%;
+  /* border-right: 5px solid rgba(0, 0, 0, 0.25); */
+}
+
+.heading {
+  background: #fff;
+  border-bottom: 1px solid black;
+  max-height: 10vh;
+  padding: 3%;
+  margin: 0px;
+  flex-wrap: none;
+}
+
+.listings {
+  max-height: 90vh;
+  position: relative;
+  display: block;
+  overflow: auto;
+}
+
+.listings .item {
+  display: block;
+  position: relative;
+  border-bottom: 1px solid rgb(189, 189, 189);
+  padding: 10px;
+  text-decoration: none;
+}
+
+.listings .item:last-child {
+  border-bottom: none;
+}
+
+.listings .item .title {
+  display: block;
+  color: #4956e9;
+  font-weight: 700;
+}
+
+.listings .item .title small {
+  font-weight: 400;
+}
+
+.listings .item.active .title,
+.listings .item .title:hover {
+  color: #010e9e;
+}
+
+.listings .item.active {
+  background-color: #cfdeeb;
+}
+
+::-webkit-scrollbar {
+  width: 5px;
+  height: 6px;
+  border-right: 0;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+::-webkit-scrollbar-track {
+  background: none;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #7d82bd;
+  border-radius: 0;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #323cb3;
+  transition: width 2s, height 4s;
+}
+
+.clearfix {
+  display: block;
+}
+
+.clearfix::after {
+  content: ".";
+  display: block;
+  height: 0;
+  clear: both;
+  visibility: hidden;
+}
+
+.mapboxgl-popup {
+  padding-bottom: 50px;
+}
+
+.mapboxgl-popup-content {
+  font: 400 15px/22px "Source Sans Pro", "Helvetica Neue", Sans-serif;
+  width: 180px;
+  padding: 0;
+}
+
+.location-title {
+  line-height: 2;
+  margin: 0;
   text-align: center;
 }
 
-.App-logo {
-  animation: App-logo-spin infinite 20s linear;
-  height: 40vmin;
-  pointer-events: none;
+.mapboxgl-popup-content h3 {
+  background: #7e85d8;
+  color: #fff;
+  display: block;
+  padding: 2px;
+  max-width: 75%;
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+.mapboxgl-popup-content h4 {
+  background: #7e85d8;
+  display: block;
+  color: #fff;
+  padding: 2px;
 }
 
-.App-link {
-  color: #61dafb;
+.mapboxgl-popup-close-button {
+  position: absolute;
+  top: 0;
+  right: 0;
+  color: rgb(109, 43, 43);
+  border-top-left-radius: 0px;
+  border-top-right-radius: 3px;
+  border-bottom-right-radius: 0px;
+  border-bottom-left-radius: 0px;
+  padding: 0;
+  margin: 0 4% 0 0;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.mapboxgl-popup-content div {
+  padding: 10px;
+}
+
+.mapboxgl-container .leaflet-marker-icon {
+  cursor: pointer;
+}
+
+.mapboxgl-popup-anchor-top > .mapboxgl-popup-content {
+  margin-top: 15px;
+}
+
+.mapboxgl-popup-anchor-top > .mapboxgl-popup-tip {
+  border-bottom-color: #91c949;
+}
+
+.no-pm {
+  margin: 0px;
+  padding: 0px;
+}
+
+.signup-btn {
+  margin-top: 5%;
+  margin-bottom: 20%;
+}
+
+.marker-rest {
+  border: none;
+  cursor: pointer;
+  height: 56px;
+  width: 56px;
+  background-image: url(./img/marker/rest.png);
+  background-color: rgba(0, 0, 0, 0);
+}
+
+.dark-overlay {
+  background-color: rgba(0, 0, 0, 0.7);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
 }
