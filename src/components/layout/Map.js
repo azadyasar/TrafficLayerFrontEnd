@@ -1,6 +1,7 @@
 import React, { Component } from "react";
 import { Link } from "react-router-dom";
 import mapboxgl from "mapbox-gl";
+import Collector from "./Collector";
 const turf = require("@turf/turf");
 
 export default class Map extends Component {
@@ -20,6 +21,7 @@ export default class Map extends Component {
     };
 
     this.clickedPoints = turf.featureCollection([]);
+    this.clickedPointIndex = -1;
     this.hoveredMarkerId = null;
 
     this.renderFunctions = [
@@ -45,7 +47,6 @@ export default class Map extends Component {
       height: window.innerHeight,
       zoom: 8
     });
-
     this.mapCanvas = this.map.getCanvasContainer();
 
     this.map.on("load", e => {
@@ -74,6 +75,7 @@ export default class Map extends Component {
       });
 
       this.map.on("mouseenter", "clicked-points", e => {
+        console.debug("MouseEnter event");
         this.hoveredMarkerId = e.features[0].properties.id;
         this.map.setFeatureState(
           { source: "clicked-points", id: this.hoveredMarkerId },
@@ -84,29 +86,49 @@ export default class Map extends Component {
       });
 
       this.map.on("mouseleave", "clicked-points", () => {
+        console.debug("Mouseleave event");
         this.map.setPaintProperty("clicked-points", "circle-color", "#295c86");
         this.mapCanvas.style.cursor = "";
       });
 
       this.map.on("mousedown", "clicked-points", e => {
+        console.debug("MouseDown event");
         e.preventDefault();
-        this.mapCanvas.style.cursor = "grab";
-        const clickedPoint = this.map.queryRenderedFeatures(e.point, {
-          layers: ["clicked-points"]
-        })[0];
-        this.clickedPointIndex = clickedPoint.properties.pos;
-        this.map.on("mousemove", this.onMove);
-        this.map.once("mouseup", this.onUp);
+        switch (e.originalEvent.which) {
+          case 1:
+            const clickedPoint = this.map.queryRenderedFeatures(e.point, {
+              layers: ["clicked-points"]
+            })[0];
+            this.clickedPointIndex = clickedPoint.properties.id;
+            this.map.on("mousemove", this.onMove);
+            this.map.once("mouseup", this.onUp);
+            break;
+          default:
+            break;
+        }
       });
 
       defaultLocations.features.forEach((marker, index) => {
-        const el = document.createElement("div");
-        el.className = "marker-rest";
+        const el = document.createElement("i");
+        el.className = "fas fa-directions";
+        el.setAttribute("id", index);
+
         el.addEventListener("click", event => {
           this.flyToStore(marker);
           this.createPopUp(marker);
 
           event.stopPropagation();
+
+          const currentTab = document.getElementById("tab-btn-group");
+          const currentTabLabel = currentTab.getElementsByClassName(
+            "active"
+          )[0];
+          if (currentTabLabel.getAttribute("data-key") !== 0) {
+            currentTabLabel.classList.remove("active");
+            currentTab.getElementsByClassName("btn")[0].classList.add("active");
+            this.setState({ currentTab: 0 });
+          }
+
           const listings = document.getElementById("listings");
           const activeItem = listings.getElementsByClassName("active");
           if (activeItem[0]) activeItem[0].classList.remove("active");
@@ -120,21 +142,60 @@ export default class Map extends Component {
               listingHTMLElement.offsetTop;
           }
         });
-        new mapboxgl.Marker(el, { offset: [0, -23] })
+        new mapboxgl.Marker(el, { offset: [0, -23], draggable: true })
           .setLngLat(marker.geometry.coordinates)
-          .addTo(this.map);
+          .addTo(this.map)
+          .on("dragend", e => {
+            const markerIndex = e.target._element.attributes.id.value;
+            defaultLocations.features[markerIndex].geometry.coordinates =
+              e.target._lngLat;
+          });
       });
     });
 
-    this.map.on("click", e => {
+    this.map.on("contextmenu", e => {
+      console.debug("ContextMenu event");
+      e.preventDefault();
+      this.mapCanvas.style.cursor = "grab";
       this.newDropoff(this.map.unproject(e.point));
-      this.updateDropoffs(this.clickedPoints);
+      this.updateDropoffs();
+    });
+
+    this.map.on("click", "clicked-points", e => {
+      console.debug("Click event");
+      const clickedPoint = this.map.queryRenderedFeatures(e.point, {
+        layers: ["clicked-points"]
+      })[0];
+      if (!clickedPoint) return;
+      const clickedPointIndex = clickedPoint.properties.id;
+
+      this.flyToStore(this.clickedPoints.features[clickedPointIndex]);
+      this.createPopUp(this.clickedPoints.features[clickedPointIndex]);
+      const currentTab = document.getElementById("tab-btn-group");
+      const currentTabLabel = currentTab.getElementsByClassName("active")[0];
+      if (currentTabLabel.getAttribute("data-key") !== 1) {
+        currentTabLabel.classList.remove("active");
+        currentTab.getElementsByClassName("btn")[1].classList.add("active");
+        this.setState({ currentTab: 1 });
+      }
+
+      const listings = document.getElementById("clicked-listings");
+      const activeItem = listings.getElementsByClassName("active");
+      if (activeItem[0]) activeItem[0].classList.remove("active");
+
+      const listingHTMLElement = document.getElementById(
+        "loc-listing-" + clickedPointIndex
+      );
+      if (listingHTMLElement) {
+        listingHTMLElement.classList.add("active");
+        listingHTMLElement.parentNode.scrollTop = listingHTMLElement.offsetTop;
+      }
     });
   }
 
   onMove = e => {
+    console.debug("MouseMove event");
     const coords = e.lngLat;
-    this.mapCanvas.style.cursor = "grabbing";
     if (this.clickedPointIndex !== -1) {
       this.clickedPoints.features[
         this.clickedPointIndex
@@ -145,6 +206,7 @@ export default class Map extends Component {
   };
 
   onUp = e => {
+    console.debug("MouseUp event");
     this.mapCanvas.style.cursor = "";
     this.clickedPointIndex = -1;
     this.map.off("mousemove", this.onMove);
@@ -167,7 +229,7 @@ export default class Map extends Component {
     const popup = new mapboxgl.Popup({ closeOnClick: true })
       .setLngLat(currentFeature.geometry.coordinates)
       .setHTML(
-        "<h4>Sweetgreen</h4>" +
+        "<h4><i class='fas fa-directions' />Sweetgreen</h4>" +
           "<p>" +
           currentFeature.properties.address +
           "</p>"
@@ -187,9 +249,9 @@ export default class Map extends Component {
     this.clickedPoints.features.push(pt);
   }
 
-  updateDropoffs(geojson) {
+  updateDropoffs() {
     const clickedPointsSource = this.map.getSource("clicked-points");
-    if (clickedPointsSource) clickedPointsSource.setData(geojson);
+    if (clickedPointsSource) clickedPointsSource.setData(this.clickedPoints);
     this.setState({ clickedPoints: this.clickedPoints });
   }
 
@@ -338,7 +400,9 @@ export default class Map extends Component {
     );
   };
 
-  renderThirdTab = () => {};
+  renderThirdTab = () => {
+    return <Collector />;
+  };
 
   render() {
     return (
