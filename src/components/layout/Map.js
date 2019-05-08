@@ -2,6 +2,7 @@ import React, { Component } from "react";
 import { Link } from "react-router-dom";
 import mapboxgl from "mapbox-gl";
 import Collector from "./Collector";
+import { parse } from "querystring";
 const turf = require("@turf/turf");
 
 const istCoord = {
@@ -23,8 +24,9 @@ export default class Map extends Component {
       popups: [],
       currentTab: 0,
       savedLocations: turf.featureCollection([]),
-      sourceCoordinate: null,
-      destCoordinate: null
+      sourceCoord: null,
+      destCoord: null,
+      checkpoints: []
     };
 
     this.clickedPoints = turf.featureCollection([]);
@@ -33,6 +35,7 @@ export default class Map extends Component {
     this.currentBtnGroupIndex = "0";
     this.sourceMarker = null;
     this.destMarker = null;
+    this.checkPointMarkers = [];
 
     this.renderFunctions = [
       this.renderLocations,
@@ -75,7 +78,7 @@ export default class Map extends Component {
         type: "circle", //"symbol" for icons
         source: "clicked-points",
         paint: {
-          "circle-radius": 10,
+          "circle-radius": 7,
           "circle-color": "#295c86"
         }
         /* layout: {
@@ -97,6 +100,7 @@ export default class Map extends Component {
 
       this.map.on("mousedown", "clicked-points", e => {
         console.debug("MouseDown event");
+        this.mapCanvas.style.cursor = "drag";
         e.preventDefault();
         switch (e.originalEvent.which) {
           case 1:
@@ -201,10 +205,10 @@ export default class Map extends Component {
                   this.sourceMarker.getLngLat()
                 );
                 this.setState({
-                  sourceCoordinate: this.sourceMarker.getLngLat()
+                  sourceCoord: this.sourceMarker.getLngLat()
                 });
               });
-              this.setState({ sourceCoordinate: e.lngLat });
+              this.setState({ sourceCoord: e.lngLat });
               break;
 
             // DESTINATION LOCATION
@@ -225,11 +229,32 @@ export default class Map extends Component {
                   this.destMarker.getLngLat()
                 );
                 this.setState({
-                  destCoordinate: this.destMarker.getLngLat()
+                  destCoord: this.destMarker.getLngLat()
                 });
               });
-              this.setState({ destCoordinate: e.lngLat });
+              this.setState({ destCoord: e.lngLat });
               break;
+
+            // CHECKPOINTS
+            case "2":
+              console.debug("General Click Event Tab[2] Btn[2]");
+              const checkpointMarkerEl = document.createElement("i");
+              checkpointMarkerEl.className = "fas fa-road";
+              checkpointMarkerEl.setAttribute(
+                "data-key",
+                this.checkPointMarkers.length
+              );
+              const checkpointMarker = new mapboxgl.Marker(checkpointMarkerEl, {
+                draggable: true
+              })
+                .setLngLat(e.lngLat)
+                .addTo(this.map);
+
+              checkpointMarker.on("drag", e => {
+                console.log(e);
+              });
+              this.checkPointMarkers.push(checkpointMarker);
+
             default:
               break;
           }
@@ -274,6 +299,7 @@ export default class Map extends Component {
 
   onMove = e => {
     console.debug("MouseMove event");
+    this.mapCanvas.style.cursor = "grabbing";
     const coords = e.lngLat;
     const savedLocationsClone = this.state.savedLocations;
     if (this.clickedPointIndex !== -1) {
@@ -398,6 +424,19 @@ export default class Map extends Component {
     this.currentBtnGroupIndex = index;
   };
 
+  onCoordInputChange = event => {
+    console.debug("onCoordInputChange", event);
+    const coord = this.state[event.target.name];
+    coord[event.target.getAttribute("data-loctype")] = parseFloat(
+      event.target.value
+    );
+    this.setState({ [event.target.name]: coord });
+    if (event.target.name.startsWith("source"))
+      this.sourceMarker.setLngLat(this.state.sourceCoord);
+    else if (event.target.name.startsWith("dest"))
+      this.destMarker.setLngLat(this.state.destCoord);
+  };
+
   buildLocationList() {
     const renderedStores = defaultLocations.features.map((store, idx) => {
       const prop = store.properties;
@@ -495,8 +534,9 @@ export default class Map extends Component {
     return (
       <Collector
         onBtnGroupClick={this.onBtnGroupClick}
-        sourceCoord={this.state.sourceCoordinate}
-        destCoord={this.state.destCoordinate}
+        sourceCoord={this.state.sourceCoord}
+        destCoord={this.state.destCoord}
+        onCoordInputChange={this.onCoordInputChange}
       />
     );
   };

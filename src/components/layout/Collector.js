@@ -1,14 +1,32 @@
 import React, { Component } from "react";
 import PropTypes from "prop-types";
+import { EventEmitter } from "events";
 
 export default class Collector extends Component {
-  constructor() {
-    super();
+  constructor(props) {
+    super(props);
     this.currentBtnGroupIndex = 0;
+    this.state = {
+      sourceCoord: this.props.sourceCoord,
+      destCoord: this.props.destCoord
+    };
   }
 
   componentDidMount() {
     console.debug("Collector Component Mount");
+  }
+
+  componentWillUnmount() {
+    // Reset button group index to 0
+    console.debug("Collector will unmount");
+    this.props.onBtnGroupClick("0");
+  }
+
+  componentWillReceiveProps(newProps) {
+    this.setState({
+      sourceCoord: newProps.sourceCoord,
+      destCoord: newProps.destCoord
+    });
   }
 
   onBtnGroupClick = e => {
@@ -24,6 +42,16 @@ export default class Collector extends Component {
     console.debug("onBtGroupClick", e.target, currentBtnGroupIndex);
     this.currentBtnGroupIndex = currentBtnGroupIndex;
     this.props.onBtnGroupClick(currentBtnGroupIndex);
+  };
+
+  onChange = event => {
+    console.log(event);
+    const coord = this.state[event.target.name];
+    coord[event.target.getAttribute("data-loctype")] = parseFloat(
+      event.target.value
+    );
+    console.log(coord[event.target.getAttribute("data-loctype")]);
+    this.setState({ [event.target.name]: coord });
   };
 
   render() {
@@ -43,10 +71,13 @@ export default class Collector extends Component {
               className="form-control"
               placeholder="Source Latitude"
               aria-label="Source Latitude"
-              aria-describedby="latitude-input"
+              name="sourceCoord"
+              data-loctype="lat"
+              aria-describedby="lat"
               id="source-latitude"
-              step="0.00001"
-              value={this.props.sourceCoord ? this.props.sourceCoord.lat : ""}
+              step="0.01"
+              onChange={this.props.onCoordInputChange}
+              value={this.state.sourceCoord ? this.state.sourceCoord.lat : ""}
             />
           </div>
           {/* Destination Latitude */}
@@ -62,9 +93,12 @@ export default class Collector extends Component {
               placeholder="Source Longitude"
               aria-label="Source Longitude"
               aria-describedby="longitude-input"
+              name="sourceCoord"
+              data-loctype="lng"
               id="source-longitude"
-              value={this.props.sourceCoord ? this.props.sourceCoord.lng : ""}
-              step="0.00001"
+              onChange={this.props.onCoordInputChange}
+              value={this.state.sourceCoord ? this.state.sourceCoord.lng : ""}
+              step="0.01"
             />
           </div>
           {/* Destination Latitude */}
@@ -80,9 +114,12 @@ export default class Collector extends Component {
               placeholder="Destination Latitude"
               aria-label="Destination Latitude"
               aria-describedby="latitude-input"
+              name="destCoord"
+              data-loctype="lat"
               id="dest-latitude"
-              value={this.props.destCoord ? this.props.destCoord.lat : ""}
-              step="0.00001"
+              onChange={this.props.onCoordInputChange}
+              value={this.state.destCoord ? this.state.destCoord.lat : ""}
+              step="0.000000000000001"
             />
           </div>
           {/* Destination Longitude */}
@@ -98,8 +135,11 @@ export default class Collector extends Component {
               placeholder="Destination Longitude"
               aria-label="Destination Longitude"
               aria-describedby="longitude-input"
-              step="0.00001"
-              value={this.props.destCoord ? this.props.destCoord.lng : ""}
+              step="0.000000000000001"
+              name="destCoord"
+              data-loctype="lng"
+              onChange={this.props.onCoordInputChange}
+              value={this.state.destCoord ? this.state.destCoord.lng : ""}
               id="dest-longitude"
             />
           </div>
@@ -112,7 +152,7 @@ export default class Collector extends Component {
               data-toggle="buttons"
               // onClick={this.onTabButtonClick}
             >
-              {/* 0 */}
+              {/* 0 Source Coordinate */}
               <label
                 className="btn btn-outline-secondary active"
                 data-key="0"
@@ -126,7 +166,7 @@ export default class Collector extends Component {
                 />{" "}
                 <i className="fas fa-map-marker-alt" />
               </label>
-              {/* 1 */}
+              {/* 1 Destination Coordinate */}
               <label
                 className="btn btn-outline-secondary"
                 data-key="1"
@@ -140,10 +180,24 @@ export default class Collector extends Component {
                 />{" "}
                 <i className="fas fa-directions" />
               </label>
-              {/* 2 */}
+              {/* 2 Checkpoints */}
               <label
                 className="btn btn-outline-secondary"
                 data-key="2"
+                onClick={this.onBtnGroupClick}
+              >
+                <input
+                  type="radio"
+                  name="options"
+                  id="savebutton"
+                  autoComplete="off"
+                />{" "}
+                <i class="fas fa-road" />
+              </label>
+              {/* 3 Save Locations */}
+              <label
+                className="btn btn-outline-secondary"
+                data-key="3"
                 onClick={this.onBtnGroupClick}
               >
                 <input
@@ -181,6 +235,7 @@ export default class Collector extends Component {
 
 Collector.propTypes = {
   onBtnGroupClick: PropTypes.func.isRequired,
+  onCoordInputChange: PropTypes.func.isRequired,
   sourceCoord: PropTypes.object,
   destCoord: PropTypes.object
 };
