@@ -4,25 +4,35 @@ import mapboxgl from "mapbox-gl";
 import Collector from "./Collector";
 const turf = require("@turf/turf");
 
+const istCoord = {
+  latitude: 40.967905,
+  longitude: 29.103301
+};
+
 export default class Map extends Component {
   constructor() {
     super();
     this.state = {
       viewport: {
-        latitude: 40.967905,
-        longitude: 29.103301,
+        latitude: istCoord.latitude,
+        longitude: istCoord.longitude,
         zoom: 8,
         bearing: 0,
         pitch: 0
       },
       popups: [],
       currentTab: 0,
-      clickedPoints: turf.featureCollection([])
+      savedLocations: turf.featureCollection([]),
+      sourceCoordinate: null,
+      destCoordinate: null
     };
 
     this.clickedPoints = turf.featureCollection([]);
     this.clickedPointIndex = -1;
-    this.hoveredMarkerId = null;
+
+    this.currentBtnGroupIndex = "0";
+    this.sourceMarker = null;
+    this.destMarker = null;
 
     this.renderFunctions = [
       this.renderLocations,
@@ -42,7 +52,7 @@ export default class Map extends Component {
     this.map = new mapboxgl.Map({
       container: "map",
       style: "mapbox://styles/mapbox/streets-v10",
-      center: [29.103301, 40.967905],
+      center: [istCoord.longitude, istCoord.latitude],
       width: window.innerWidth,
       height: window.innerHeight,
       zoom: 8
@@ -57,7 +67,7 @@ export default class Map extends Component {
 
       this.map.addSource("clicked-points", {
         type: "geojson",
-        data: this.clickedPoints
+        data: this.state.savedLocations
       });
 
       this.map.addLayer({
@@ -76,12 +86,6 @@ export default class Map extends Component {
 
       this.map.on("mouseenter", "clicked-points", e => {
         console.debug("MouseEnter event");
-        this.hoveredMarkerId = e.features[0].properties.id;
-        this.map.setFeatureState(
-          { source: "clicked-points", id: this.hoveredMarkerId },
-          { hover: true }
-        );
-        // this.map.setPaintProperty("clicked-points", "circle-color", "#5e7f9b");
         this.mapCanvas.style.cursor = "move";
       });
 
@@ -108,7 +112,7 @@ export default class Map extends Component {
         }
       });
 
-      defaultLocations.features.forEach((marker, index) => {
+      /* defaultLocations.features.forEach((marker, index) => {
         const el = document.createElement("i");
         el.className = "fas fa-directions";
         el.setAttribute("id", index);
@@ -150,7 +154,7 @@ export default class Map extends Component {
             defaultLocations.features[markerIndex].geometry.coordinates =
               e.target._lngLat;
           });
-      });
+      }); */
     });
 
     this.map.on("contextmenu", e => {
@@ -161,16 +165,91 @@ export default class Map extends Component {
       this.updateDropoffs();
     });
 
+    this.map.on("click", e => {
+      /** Tabs:
+       * 0- History
+       * 1- Collector
+       * 2- Radio
+       */
+      console.log(
+        "=>General Click Event Tab[" +
+          `${this.state.currentTab}], Btn[${this.currentBtnGroupIndex}]`
+      );
+      switch (this.state.currentTab) {
+        case "2":
+          /**Indexes
+           * 0- Source Location
+           * 1- Destination Location
+           * 3- Save Location
+           */
+          switch (this.currentBtnGroupIndex) {
+            // SOURCE LOCATION
+            case "0":
+              console.debug("General Click Event Tab[2] Btn[0]");
+              const sourceMarkerEl = document.createElement("i");
+              sourceMarkerEl.className = "fas fa-map-marker-alt";
+              if (this.sourceMarker) this.sourceMarker.remove();
+              this.sourceMarker = new mapboxgl.Marker(sourceMarkerEl, {
+                draggable: true
+              })
+                .setLngLat(e.lngLat)
+                .addTo(this.map);
+              // Q Use dragend?
+              this.sourceMarker.on("drag", () => {
+                console.debug(
+                  "Dragend Source Marker",
+                  this.sourceMarker.getLngLat()
+                );
+                this.setState({
+                  sourceCoordinate: this.sourceMarker.getLngLat()
+                });
+              });
+              this.setState({ sourceCoordinate: e.lngLat });
+              break;
+
+            // DESTINATION LOCATION
+            case "1":
+              console.debug("General Click Event Tab[2] Btn[1]");
+              const destMarkerEl = document.createElement("i");
+              destMarkerEl.className = "fas fa-directions";
+              if (this.destMarker) this.destMarker.remove();
+              this.destMarker = new mapboxgl.Marker(destMarkerEl, {
+                draggable: true
+              })
+                .setLngLat(e.lngLat)
+                .addTo(this.map);
+              // Q Use dragend?
+              this.destMarker.on("drag", () => {
+                console.debug(
+                  "Dragend Source Marker",
+                  this.destMarker.getLngLat()
+                );
+                this.setState({
+                  destCoordinate: this.destMarker.getLngLat()
+                });
+              });
+              this.setState({ destCoordinate: e.lngLat });
+              break;
+            default:
+              break;
+          }
+          break;
+
+        default:
+          break;
+      }
+    });
+
     this.map.on("click", "clicked-points", e => {
-      console.debug("Click event");
+      console.debug("Click event of clicked-points");
       const clickedPoint = this.map.queryRenderedFeatures(e.point, {
         layers: ["clicked-points"]
       })[0];
       if (!clickedPoint) return;
       const clickedPointIndex = clickedPoint.properties.id;
 
-      this.flyToStore(this.clickedPoints.features[clickedPointIndex]);
-      this.createPopUp(this.clickedPoints.features[clickedPointIndex]);
+      this.flyToStore(this.state.savedLocations.features[clickedPointIndex]);
+      this.createPopUp(this.state.savedLocations.features[clickedPointIndex]);
       const currentTab = document.getElementById("tab-btn-group");
       const currentTabLabel = currentTab.getElementsByClassName("active")[0];
       if (currentTabLabel.getAttribute("data-key") !== 1) {
@@ -196,12 +275,13 @@ export default class Map extends Component {
   onMove = e => {
     console.debug("MouseMove event");
     const coords = e.lngLat;
+    const savedLocationsClone = this.state.savedLocations;
     if (this.clickedPointIndex !== -1) {
-      this.clickedPoints.features[
+      savedLocationsClone.features[
         this.clickedPointIndex
       ].geometry.coordinates = [coords.lng, coords.lat];
-      this.map.getSource("clicked-points").setData(this.clickedPoints);
-      this.setState({ clickedPoints: this.clickedPoints });
+      this.map.getSource("clicked-points").setData(this.state.savedLocations);
+      this.setState({ savedLocations: savedLocationsClone });
     }
   };
 
@@ -244,15 +324,19 @@ export default class Map extends Component {
     const pt = turf.point([coords.lng, coords.lat], {
       orderTime: Date.now(),
       key: Math.random(),
-      id: this.clickedPoints.features.length
+      id: this.state.savedLocations.features.length
     });
-    this.clickedPoints.features.push(pt);
+    let newSavedLocations = Object.assign({}, this.state.savedLocations);
+    newSavedLocations.features.push(pt);
+    this.setState({
+      savedLocations: newSavedLocations
+    });
   }
 
   updateDropoffs() {
     const clickedPointsSource = this.map.getSource("clicked-points");
-    if (clickedPointsSource) clickedPointsSource.setData(this.clickedPoints);
-    this.setState({ clickedPoints: this.clickedPoints });
+    if (clickedPointsSource)
+      clickedPointsSource.setData(this.state.savedLocations);
   }
 
   componentWillUnmount() {
@@ -260,6 +344,8 @@ export default class Map extends Component {
   }
 
   onLocationClick = event => {
+    // DISABLED FOR NOW
+    return;
     const clickedLocation =
       defaultLocations.features[event.target.getAttribute("dataposition")];
     // 1. Fly to the point associated with the clicked link.
@@ -281,7 +367,7 @@ export default class Map extends Component {
   };
 
   onInsertedLocClick = event => {
-    const clickedLocation = this.state.clickedPoints.features[
+    const clickedLocation = this.state.savedLocations.features[
       event.target.getAttribute("dataposition")
     ];
     // 1. Fly to the point associated with the clicked link.
@@ -303,8 +389,13 @@ export default class Map extends Component {
   };
 
   onTabButtonClick = event => {
-    console.debug("onTabButtonClick");
-    this.setState({ currentTab: event.target.getAttribute("data-key") });
+    const currentTab = event.target.getAttribute("data-key");
+    console.debug("onTabButtonClick Tab: " + currentTab, event);
+    this.setState({ currentTab });
+  };
+
+  onBtnGroupClick = index => {
+    this.currentBtnGroupIndex = index;
   };
 
   buildLocationList() {
@@ -328,7 +419,7 @@ export default class Map extends Component {
   }
 
   buildClickedLocationList() {
-    const renderedLocationList = this.clickedPoints.features.map(
+    const renderedLocationList = this.state.savedLocations.features.map(
       (point, index) => {
         const prop = point.properties;
         return (
@@ -401,10 +492,17 @@ export default class Map extends Component {
   };
 
   renderThirdTab = () => {
-    return <Collector />;
+    return (
+      <Collector
+        onBtnGroupClick={this.onBtnGroupClick}
+        sourceCoord={this.state.sourceCoordinate}
+        destCoord={this.state.destCoordinate}
+      />
+    );
   };
 
   render() {
+    console.debug("Map rendering again.");
     return (
       <div className="container-fluid no-pm">
         <div className="map-tool-container">
