@@ -39,6 +39,14 @@ export default class Map extends Component {
       this.renderCollector,
       this.renderThirdTab
     ];
+
+    this.mapStyles = [
+      "streets-v10",
+      "light-v10",
+      "dark-v10",
+      "outdoors-v11",
+      "satellite-v9"
+    ];
   }
 
   _onViewPortChange = viewport =>
@@ -59,13 +67,34 @@ export default class Map extends Component {
     });
     this.mapCanvas = this.map.getCanvasContainer();
 
+    this.map.on("style.load", e => {
+      console.debug("Style.load event");
+      this.map.addSource("clicked-points", {
+        type: "geojson",
+        data: this.state.savedLocations
+      });
+      this.map.addLayer({
+        id: "clicked-points",
+        type: "circle", //"symbol" for icons
+        source: "clicked-points",
+        paint: {
+          "circle-radius": 10,
+          "circle-color": "#295c86"
+        }
+        /* layout: {
+            "icon-image": "car-15",
+            "icon-allow-overlap": false
+          } */
+      });
+    });
+
     this.map.on("load", e => {
       this.map.addSource("places", {
         type: "geojson",
         data: defaultLocations
       });
 
-      this.map.addSource("clicked-points", {
+      /* this.map.addSource("clicked-points", {
         type: "geojson",
         data: this.state.savedLocations
       });
@@ -78,11 +107,11 @@ export default class Map extends Component {
           "circle-radius": 10,
           "circle-color": "#295c86"
         }
-        /* layout: {
+         layout: {
           "icon-image": "car-15",
           "icon-allow-overlap": false
-        } */
-      });
+        } 
+      }); */
 
       this.map.on("mouseenter", "clicked-points", e => {
         console.debug("MouseEnter event");
@@ -398,6 +427,21 @@ export default class Map extends Component {
     this.currentBtnGroupIndex = index;
   };
 
+  onStyleChange = event => {
+    console.debug("onStyleChange");
+    event.preventDefault();
+    this.map.setStyle(
+      "mapbox://styles/mapbox/" +
+        this.mapStyles[event.target.getAttribute("data-key")]
+    );
+
+    const currentActiveEl = document
+      .getElementById("style-dropdown-menu")
+      .getElementsByClassName("active")[0];
+    currentActiveEl.classList.remove("active");
+    event.target.classList.add("active");
+  };
+
   buildLocationList() {
     const renderedStores = defaultLocations.features.map((store, idx) => {
       const prop = store.properties;
@@ -497,6 +541,7 @@ export default class Map extends Component {
         onBtnGroupClick={this.onBtnGroupClick}
         sourceCoord={this.state.sourceCoordinate}
         destCoord={this.state.destCoordinate}
+        onStyleChange={this.onStyleChange}
       />
     );
   };
