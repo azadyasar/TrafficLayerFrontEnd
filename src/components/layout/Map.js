@@ -94,6 +94,23 @@ export default class Map extends Component {
         data: defaultLocations
       });
 
+      this.map.addLayer({
+        id: "route",
+        type: "line",
+        source: {
+          type: "geojson",
+          data: customLine
+        },
+        layout: {
+          "line-join": "round",
+          "line-cap": "round"
+        },
+        paint: {
+          "line-color": "#888",
+          "line-width": 4
+        }
+      });
+
       /* this.map.addSource("clicked-points", {
         type: "geojson",
         data: this.state.savedLocations
@@ -278,7 +295,10 @@ export default class Map extends Component {
       const clickedPointIndex = clickedPoint.properties.id;
 
       this.flyToStore(this.state.savedLocations.features[clickedPointIndex]);
-      this.createPopUp(this.state.savedLocations.features[clickedPointIndex]);
+      this.createPopUp(
+        this.state.savedLocations.features[clickedPointIndex],
+        clickedPointIndex
+      );
       const currentTab = document.getElementById("tab-btn-group");
       const currentTabLabel = currentTab.getElementsByClassName("active")[0];
       if (currentTabLabel.getAttribute("data-key") !== 1) {
@@ -328,7 +348,7 @@ export default class Map extends Component {
     });
   }
 
-  createPopUp(currentFeature) {
+  createPopUp(currentFeature, index = 0) {
     // Remove already created pop-up
     if (this.state.popups[0]) {
       this.state.popups[0].remove();
@@ -340,7 +360,7 @@ export default class Map extends Component {
       .setHTML(
         "<h4><i class='fas fa-directions' />Sweetgreen</h4>" +
           "<p>" +
-          currentFeature.properties.address +
+          `${index}. Item` +
           "</p>"
       )
       .addTo(this.map);
@@ -434,13 +454,16 @@ export default class Map extends Component {
       "mapbox://styles/mapbox/" +
         this.mapStyles[event.target.getAttribute("data-key")]
     );
-
     const currentActiveEl = document
       .getElementById("style-dropdown-menu")
       .getElementsByClassName("active")[0];
     currentActiveEl.classList.remove("active");
     event.target.classList.add("active");
   };
+
+  onLatLngInputChange = event => {
+    
+  }
 
   buildLocationList() {
     const renderedStores = defaultLocations.features.map((store, idx) => {
@@ -682,6 +705,36 @@ var defaultLocations = {
       geometry: {
         type: "Point",
         coordinates: [29.000473022460934, 41.05890302421599]
+      }
+    }
+  ]
+};
+
+const customLine = {
+  type: "FeatureCollection",
+  features: [
+    {
+      type: "Feature",
+      properties: {},
+      geometry: {
+        type: "LineString",
+        coordinates: [
+          [29.281311035156254, 40.9614931559928],
+          [29.2401123046875, 40.97601013534183],
+          [29.211959838867188, 40.98119399678795],
+          [29.182090759277344, 40.99104221112936],
+          [29.154281616210938, 40.99415186798861],
+          [29.117546081542972, 40.99674313666156],
+          [29.09694671630859, 40.98119399678795],
+          [29.103469848632812, 40.965122700251705],
+          [29.12578582763672, 40.947491615510124],
+          [29.15119171142578, 40.92648373707824],
+          [29.188613891601562, 40.91377202429224],
+          [29.210243225097653, 40.90598813645525],
+          [29.213333129882812, 40.91792305645495],
+          [29.224319458007812, 40.920517319192335],
+          [29.228782653808594, 40.89560819396543]
+        ]
       }
     }
   ]

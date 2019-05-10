@@ -12,7 +12,8 @@ class Signup extends Component {
       password: "",
       password2: "",
       formSubmittedSuccessfully: false,
-      errors: {}
+      errors: {},
+      valids: {}
     };
   }
 
@@ -20,6 +21,7 @@ class Signup extends Component {
     this.setState({ [event.target.name]: event.target.value });
   }
 
+  // SHOULDO Move validation feedback to onChange?
   onSubmit(event) {
     event.preventDefault();
 
@@ -33,30 +35,42 @@ class Signup extends Component {
     console.log(`newUser: ${JSON.stringify(newUser)}`);
 
     let errors = {};
+    let valids = {};
     let isFormLegit = true;
     if (!this.state.name) {
       errors.name = "Invalid name";
       isFormLegit = false;
+    } else {
+      valids.name = "Valid name";
     }
     if (!this.state.email) {
       errors.email = "Invalid email";
       isFormLegit = false;
+    } else {
+      valids.email = "Valid email";
     }
     if (!this.state.password) {
       errors.password = "Invalid password";
       isFormLegit = false;
+    } else {
+      valids.password = "Valid password";
     }
     if (!this.state.password2) {
       errors.password2 = "Invalid confirm password";
       isFormLegit = false;
+    } else {
+      valids.password2 = "Valid password2";
     }
     if (this.state.password !== this.state.password2) {
       isFormLegit = false;
       errors.passwordMatch = "Passwords do not match!";
+      valids.password = valids.password2 = null;
     }
-    console.log(`Errors: ${JSON.stringify(errors)}`);
+    console.log(
+      `Errors: ${JSON.stringify(errors)}, Valids: ${JSON.stringify(valids)}`
+    );
 
-    this.setState({ errors, formSubmittedSuccessfully: isFormLegit });
+    this.setState({ errors, valids, formSubmittedSuccessfully: isFormLegit });
 
     if (isFormLegit) {
       window.alert("Successfully signed up!");
@@ -68,7 +82,7 @@ class Signup extends Component {
   render() {
     if (this.state.formSubmittedSuccessfully) return <Redirect to="/login" />;
 
-    const { errors } = this.state;
+    const { errors, valids } = this.state;
     console.log(`render got errors: ${JSON.stringify(errors)}`);
     return (
       <div className="signup">
@@ -84,7 +98,8 @@ class Signup extends Component {
                   <input
                     type="text"
                     className={classnames("form-control form-control-lg", {
-                      "is-invalid": errors.name
+                      "is-invalid": errors.name,
+                      "is-valid": valids.name
                     })}
                     placeholder="Name"
                     name="name"
@@ -101,7 +116,8 @@ class Signup extends Component {
                   <input
                     type="email"
                     className={classnames("form-control form-control-lg", {
-                      "is-invalid": errors.email
+                      "is-invalid": errors.email,
+                      "is-valid": valids.email
                     })}
                     placeholder="Email Address"
                     name="email"
@@ -122,7 +138,8 @@ class Signup extends Component {
                   <input
                     type="password"
                     className={classnames("form-control form-control-lg", {
-                      "is-invalid": errors.password || errors.passwordMatch
+                      "is-invalid": errors.password || errors.passwordMatch,
+                      "is-valid": valids.password
                     })}
                     placeholder="Password"
                     name="password"
@@ -144,7 +161,8 @@ class Signup extends Component {
                   <input
                     type="password"
                     className={classnames("form-control form-control-lg", {
-                      "is-invalid": errors.password2 || errors.passwordMatch
+                      "is-invalid": errors.password2 || errors.passwordMatch,
+                      "is-valid": valids.password2
                     })}
                     placeholder="Confirm Password"
                     name="password2"

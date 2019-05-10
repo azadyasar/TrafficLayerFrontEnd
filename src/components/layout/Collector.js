@@ -1,10 +1,24 @@
 import React, { Component } from "react";
 import PropTypes from "prop-types";
+import classnames from "classnames";
 
 export default class Collector extends Component {
   constructor() {
     super();
     this.currentBtnGroupIndex = 0;
+    this.state = {
+      isSourceLatValid: 0,
+      isSourceLngValid: 0,
+      isDestLatValid: 0,
+      isDestLngValid: 0
+    };
+
+    this.sourceDestValidMap = {
+      "source-latitude": "isSourceLatValid",
+      "source-longitude": "isSourceLngValid",
+      "dest-latitude": "isDestLatValid",
+      "dest-longitude": "isDestLngValid"
+    };
   }
 
   componentDidMount() {
@@ -31,11 +45,21 @@ export default class Collector extends Component {
     console.log(e);
   };
 
+  onLatLngChange = e => {
+    const value = e.target.value;
+  };
+
+  onStartSubmit = e => {
+    console.debug("Collector Start Submit Event");
+    e.preventDefault();
+    window.alert("Started collecting!");
+  };
+
   render() {
     console.debug("Collector rendering again");
     return (
       <React.Fragment>
-        <form>
+        <form onSubmit={e => this.onStartSubmit}>
           <div className="form-group ">
             {/* Source Latitude */}
             <div className="input-group mt-3">
@@ -46,12 +70,15 @@ export default class Collector extends Component {
               </div>
               <input
                 type="number"
-                className="form-control"
+                className={classnames("form-control", {
+                  "is-invalid": this.state.isSourceLatValid
+                })}
                 placeholder="Source Latitude"
                 aria-label="Source Latitude"
                 aria-describedby="latitude-input"
                 id="source-latitude"
                 step="0.00001"
+                onChange={this.onLatLngChange}
                 value={this.props.sourceCoord ? this.props.sourceCoord.lat : ""}
               />
             </div>
@@ -64,11 +91,14 @@ export default class Collector extends Component {
               </div>
               <input
                 type="number"
-                className="form-control"
+                className={classnames("form-control", {
+                  "is-invalid": this.state.isSourceLngValid
+                })}
                 placeholder="Source Longitude"
                 aria-label="Source Longitude"
                 aria-describedby="longitude-input"
                 id="source-longitude"
+                onChange={this.onLatLngChange}
                 value={this.props.sourceCoord ? this.props.sourceCoord.lng : ""}
                 step="0.00001"
               />
@@ -82,11 +112,14 @@ export default class Collector extends Component {
               </div>
               <input
                 type="number"
-                className="form-control"
+                className={classnames("form-control", {
+                  "is-invalid": this.state.isDestLatValid
+                })}
                 placeholder="Destination Latitude"
                 aria-label="Destination Latitude"
                 aria-describedby="latitude-input"
                 id="dest-latitude"
+                onChange={this.onLatLngChange}
                 value={this.props.destCoord ? this.props.destCoord.lat : ""}
                 step="0.00001"
               />
@@ -100,11 +133,14 @@ export default class Collector extends Component {
               </div>
               <input
                 type="number"
-                className="form-control"
+                className={classnames("form-control", {
+                  "is-invalid": this.state.isDestLngValid
+                })}
                 placeholder="Destination Longitude"
                 aria-label="Destination Longitude"
                 aria-describedby="longitude-input"
                 step="0.00001"
+                onChange={this.onLatLngChange}
                 value={this.props.destCoord ? this.props.destCoord.lng : ""}
                 id="dest-longitude"
               />
