@@ -23,16 +23,19 @@ export default class Map extends Component {
       popups: [],
       currentTab: 0,
       savedLocations: turf.featureCollection([]),
-      sourceCoordinate: null,
-      destCoordinate: null
+      sourceCoord: null,
+      destCoord: null,
+      checkpoints: []
     };
 
     this.clickedPoints = turf.featureCollection([]);
     this.clickedPointIndex = -1;
 
+    // Used to keep track of pressed radio button group within collector e.g., source/dest/checkpoint/save
     this.currentBtnGroupIndex = "0";
     this.sourceMarker = null;
     this.destMarker = null;
+    this.checkPointMarkers = [];
 
     this.renderFunctions = [
       this.renderLocations,
@@ -121,7 +124,7 @@ export default class Map extends Component {
         type: "circle", //"symbol" for icons
         source: "clicked-points",
         paint: {
-          "circle-radius": 10,
+          "circle-radius": 7,
           "circle-color": "#295c86"
         }
          layout: {
@@ -143,6 +146,7 @@ export default class Map extends Component {
 
       this.map.on("mousedown", "clicked-points", e => {
         console.debug("MouseDown event");
+        this.mapCanvas.style.cursor = "drag";
         e.preventDefault();
         switch (e.originalEvent.which) {
           case 1:
@@ -233,7 +237,7 @@ export default class Map extends Component {
             case "0":
               console.debug("General Click Event Tab[2] Btn[0]");
               const sourceMarkerEl = document.createElement("i");
-              sourceMarkerEl.className = "fas fa-map-marker-alt";
+              sourceMarkerEl.className = "fas fa-map-marker-alt fa-lg";
               if (this.sourceMarker) this.sourceMarker.remove();
               this.sourceMarker = new mapboxgl.Marker(sourceMarkerEl, {
                 draggable: true
@@ -243,21 +247,21 @@ export default class Map extends Component {
               // Q Use dragend?
               this.sourceMarker.on("drag", () => {
                 console.debug(
-                  "Dragend Source Marker",
+                  "Drageging Source Marker",
                   this.sourceMarker.getLngLat()
                 );
                 this.setState({
-                  sourceCoordinate: this.sourceMarker.getLngLat()
+                  sourceCoord: this.sourceMarker.getLngLat()
                 });
               });
-              this.setState({ sourceCoordinate: e.lngLat });
+              this.setState({ sourceCoord: e.lngLat });
               break;
 
             // DESTINATION LOCATION
             case "1":
               console.debug("General Click Event Tab[2] Btn[1]");
               const destMarkerEl = document.createElement("i");
-              destMarkerEl.className = "fas fa-directions";
+              destMarkerEl.className = "fas fa-directions fa-lg";
               if (this.destMarker) this.destMarker.remove();
               this.destMarker = new mapboxgl.Marker(destMarkerEl, {
                 draggable: true
@@ -271,10 +275,31 @@ export default class Map extends Component {
                   this.destMarker.getLngLat()
                 );
                 this.setState({
-                  destCoordinate: this.destMarker.getLngLat()
+                  destCoord: this.destMarker.getLngLat()
                 });
               });
-              this.setState({ destCoordinate: e.lngLat });
+              this.setState({ destCoord: e.lngLat });
+              break;
+
+            // CHECKPOINTS
+            case "2":
+              console.debug("General Click Event Tab[2] Btn[2]");
+              const checkpointMarkerEl = document.createElement("i");
+              checkpointMarkerEl.className = "fas fa-road fa-lg";
+              checkpointMarkerEl.setAttribute(
+                "data-key",
+                this.checkPointMarkers.length
+              );
+              const checkpointMarker = new mapboxgl.Marker(checkpointMarkerEl, {
+                draggable: true
+              })
+                .setLngLat(e.lngLat)
+                .addTo(this.map);
+
+              checkpointMarker.on("drag", e => {
+                console.log(e);
+              });
+              this.checkPointMarkers.push(checkpointMarker);
               break;
             default:
               break;
@@ -323,6 +348,7 @@ export default class Map extends Component {
 
   onMove = e => {
     console.debug("MouseMove event");
+    this.mapCanvas.style.cursor = "grabbing";
     const coords = e.lngLat;
     const savedLocationsClone = this.state.savedLocations;
     if (this.clickedPointIndex !== -1) {
@@ -461,9 +487,18 @@ export default class Map extends Component {
     event.target.classList.add("active");
   };
 
-  onLatLngInputChange = event => {
-    
-  }
+  onLatLngInputChange = event => {};
+
+  onCoordInputChange = (info, isInputCoordInvalid) => {
+    console.debug("onCoordInputChange (Map)");
+    this.setState({ [info.coordName]: info.coord });
+    if (isInputCoordInvalid) return;
+    console.debug("Setting markers position to: ", info.coord);
+    if (info.coordName.startsWith("source"))
+      this.sourceMarker.setLngLat(this.state.sourceCoord);
+    else if (info.coordName.startsWith("dest"))
+      this.destMarker.setLngLat(this.state.destCoord);
+  };
 
   buildLocationList() {
     const renderedStores = defaultLocations.features.map((store, idx) => {
@@ -562,9 +597,10 @@ export default class Map extends Component {
     return (
       <Collector
         onBtnGroupClick={this.onBtnGroupClick}
-        sourceCoord={this.state.sourceCoordinate}
-        destCoord={this.state.destCoordinate}
+        sourceCoord={this.state.sourceCoord}
+        destCoord={this.state.destCoord}
         onStyleChange={this.onStyleChange}
+        onCoordInputChange={this.onCoordInputChange}
       />
     );
   };
@@ -574,9 +610,7 @@ export default class Map extends Component {
     return (
       <div className="container-fluid no-pm">
         <div className="map-tool-container">
-          <Link to="/">
-            <img src={require("../../img/avl.png")} alt="" />
-          </Link>
+          <Link to="/" />
         </div>
         <div className="row no-pm">
           {/* SIDEBAR TABS */}

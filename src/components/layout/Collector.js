@@ -3,26 +3,39 @@ import PropTypes from "prop-types";
 import classnames from "classnames";
 
 export default class Collector extends Component {
-  constructor() {
-    super();
+  constructor(props) {
+    super(props);
+    this.state = {};
+
     this.currentBtnGroupIndex = 0;
-    this.state = {
-      isSourceLatValid: 0,
-      isSourceLngValid: 0,
-      isDestLatValid: 0,
-      isDestLngValid: 0
-    };
+    this.isSourceLatInvalid = null;
+    this.isSourceLngInvalid = null;
+    this.isDestLatInvalid = null;
+    this.isDestLngInvalid = null;
 
     this.sourceDestValidMap = {
-      "source-latitude": "isSourceLatValid",
-      "source-longitude": "isSourceLngValid",
-      "dest-latitude": "isDestLatValid",
-      "dest-longitude": "isDestLngValid"
+      "source-latitude": "isSourceLatInvalid",
+      "source-longitude": "isSourceLngInvalid",
+      "dest-latitude": "isDestLatInvalid",
+      "dest-longitude": "isDestLngInvalid"
     };
   }
 
   componentDidMount() {
     console.debug("Collector Component Mount");
+  }
+
+  componentWillUnmount() {
+    // Reset button group index to 0
+    console.debug("Collector will unmount");
+    this.props.onBtnGroupClick("0");
+  }
+
+  componentWillReceiveProps(newProps) {
+    this.setState({
+      sourceCoord: newProps.sourceCoord,
+      destCoord: newProps.destCoord
+    });
   }
 
   onBtnGroupClick = e => {
@@ -45,8 +58,50 @@ export default class Collector extends Component {
     console.log(e);
   };
 
-  onLatLngChange = e => {
-    const value = e.target.value;
+  onCoordInputChange = e => {
+    console.debug("onCoordInputChange fired", e);
+    const coord = this.props[e.target.name];
+    if (!coord) return;
+
+    const value = parseFloat(e.target.value);
+
+    if (e.target.getAttribute("aria-describedby") === "lat") {
+      if (value < -89.9 || value > 89.9 || Number.isNaN(value)) {
+        console.debug(
+          "Setting ",
+          e.target.id,
+          this.sourceDestValidMap[e.target.id]
+        );
+        this[this.sourceDestValidMap[e.target.id]] = 1;
+      } else this[this.sourceDestValidMap[e.target.id]] = null;
+      coord.lat = parseFloat(e.target.value);
+    } else if (e.target.getAttribute("aria-describedby") === "lng") {
+      if (value < -179.9 || value > 179.9 || Number.isNaN(value)) {
+        console.debug(
+          "Setting ",
+          e.target.id,
+          this.sourceDestValidMap[e.target.id]
+        );
+        this[this.sourceDestValidMap[e.target.id]] = 1;
+      } else this[this.sourceDestValidMap[e.target.id]] = null;
+      coord.lng = parseFloat(e.target.value);
+    } else
+      console.debug(
+        "Unknown aria-describedby property: ",
+        e.target.getAttribute("aria-describedby")
+      );
+
+    console.debug(
+      "State of invalids before calling the parent onCoordInputChange: ",
+      this
+    );
+    this.props.onCoordInputChange(
+      { coordName: e.target.name, coord: coord },
+      this.isSourceLatInvalid ||
+        this.isSourceLngInvalid ||
+        this.isDestLatInvalid ||
+        this.isDestLngInvalid
+    );
   };
 
   onStartSubmit = e => {
@@ -66,84 +121,112 @@ export default class Collector extends Component {
               <div className="input-group-prepend">
                 <span className="input-group-text">
                   <i className="fas fa-map-marker-alt" />
+                  <h6 className="ml-2 mt-2"> Lat</h6>
                 </span>
               </div>
               <input
                 type="number"
                 className={classnames("form-control", {
-                  "is-invalid": this.state.isSourceLatValid
+                  "is-invalid": this.isSourceLatInvalid
                 })}
                 placeholder="Source Latitude"
                 aria-label="Source Latitude"
-                aria-describedby="latitude-input"
+                aria-describedby="lat"
                 id="source-latitude"
-                step="0.00001"
-                onChange={this.onLatLngChange}
+                name="sourceCoord"
+                step="0.01"
+                onChange={this.onCoordInputChange}
                 value={this.props.sourceCoord ? this.props.sourceCoord.lat : ""}
               />
+              {this.isSourceLatInvalid && (
+                <div className="invalid-feedback coord-invalid-feedback">
+                  Latitude must be in range [-90, 90]
+                </div>
+              )}
             </div>
-            {/* Destination Latitude */}
+            {/* Source Longitude */}
             <div className="input-group mt-3">
               <div className="input-group-prepend">
                 <span className="input-group-text">
                   <i className="fas fa-map-marker-alt" />
+                  <h6 className="ml-2 mt-2"> Lng</h6>
                 </span>
               </div>
               <input
                 type="number"
                 className={classnames("form-control", {
-                  "is-invalid": this.state.isSourceLngValid
+                  "is-invalid": this.isSourceLngInvalid
                 })}
                 placeholder="Source Longitude"
                 aria-label="Source Longitude"
-                aria-describedby="longitude-input"
+                aria-describedby="lng"
                 id="source-longitude"
-                onChange={this.onLatLngChange}
+                name="sourceCoord"
+                onChange={this.onCoordInputChange}
                 value={this.props.sourceCoord ? this.props.sourceCoord.lng : ""}
-                step="0.00001"
+                step="0.01"
               />
+              {this.isSourceLngInvalid && (
+                <div className="invalid-feedback coord-invalid-feedback">
+                  Longitude must be in range [-180, 180]
+                </div>
+              )}
             </div>
             {/* Destination Latitude */}
             <div className="input-group mt-3">
               <div className="input-group-prepend">
-                <span className="input-group-text" id="longitude-input">
+                <span className="input-group-text" id="longitude">
                   <i className="fas fa-directions" />
+                  <h6 className="ml-1 mt-2"> Lat</h6>
                 </span>
               </div>
               <input
                 type="number"
                 className={classnames("form-control", {
-                  "is-invalid": this.state.isDestLatValid
+                  "is-invalid": this.isDestLatInvalid
                 })}
                 placeholder="Destination Latitude"
                 aria-label="Destination Latitude"
-                aria-describedby="latitude-input"
+                aria-describedby="lat"
                 id="dest-latitude"
-                onChange={this.onLatLngChange}
+                name="destCoord"
+                onChange={this.onCoordInputChange}
                 value={this.props.destCoord ? this.props.destCoord.lat : ""}
-                step="0.00001"
+                step="0.01"
               />
+              {this.isDestLatInvalid && (
+                <div className="invalid-feedback coord-invalid-feedback">
+                  Latitude must be in range [-90, 90]
+                </div>
+              )}
             </div>
             {/* Destination Longitude */}
             <div className="input-group mt-3">
               <div className="input-group-prepend">
-                <span className="input-group-text" id="longitude-input">
+                <span className="input-group-text" id="longitude">
                   <i className="fas fa-directions" />
+                  <h6 className="ml-1 mt-2"> Lng</h6>
                 </span>
               </div>
               <input
                 type="number"
                 className={classnames("form-control", {
-                  "is-invalid": this.state.isDestLngValid
+                  "is-invalid": this.isDestLngInvalid
                 })}
                 placeholder="Destination Longitude"
                 aria-label="Destination Longitude"
-                aria-describedby="longitude-input"
-                step="0.00001"
-                onChange={this.onLatLngChange}
+                aria-describedby="lng"
+                step="0.01"
+                onChange={this.onCoordInputChange}
                 value={this.props.destCoord ? this.props.destCoord.lng : ""}
                 id="dest-longitude"
+                name="destCoord"
               />
+              {this.isDestLngInvalid && (
+                <div className="invalid-feedback coord-invalid-feedback">
+                  Longitude must be in range [-180, 180]
+                </div>
+              )}
             </div>
 
             {/* Button Group */}
@@ -154,7 +237,7 @@ export default class Collector extends Component {
                 data-toggle="buttons"
                 // onClick={this.onTabButtonClick}
               >
-                {/* 0 */}
+                {/* 0 Source Coordinate */}
                 <label
                   className="btn btn-outline-secondary active"
                   data-key="0"
@@ -168,7 +251,7 @@ export default class Collector extends Component {
                   />{" "}
                   <i className="fas fa-map-marker-alt" />
                 </label>
-                {/* 1 */}
+                {/* 1 Destination Coordinate */}
                 <label
                   className="btn btn-outline-secondary"
                   data-key="1"
@@ -177,15 +260,29 @@ export default class Collector extends Component {
                   <input
                     type="radio"
                     name="options"
-                    id="destinationbutton"
+                    id="destbutton"
                     autoComplete="off"
-                  />{" "}
+                  />
                   <i className="fas fa-directions" />
                 </label>
-                {/* 2 */}
+                {/* 2 Checkpoints */}
                 <label
                   className="btn btn-outline-secondary"
                   data-key="2"
+                  onClick={this.onBtnGroupClick}
+                >
+                  <input
+                    type="radio"
+                    name="options"
+                    id="savebutton"
+                    autoComplete="off"
+                  />{" "}
+                  <i className="fas fa-road" />
+                </label>
+                {/* 3 Save Locations */}
+                <label
+                  className="btn btn-outline-secondary"
+                  data-key="3"
                   onClick={this.onBtnGroupClick}
                 >
                   <input
@@ -277,6 +374,7 @@ export default class Collector extends Component {
 Collector.propTypes = {
   onBtnGroupClick: PropTypes.func.isRequired,
   onStyleChange: PropTypes.func.isRequired,
+  onCoordInputChange: PropTypes.func.isRequired,
   sourceCoord: PropTypes.object,
   destCoord: PropTypes.object
 };
