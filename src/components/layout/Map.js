@@ -230,6 +230,7 @@ export default class Map extends Component {
           /**Indexes
            * 0- Source Location
            * 1- Destination Location
+           * 2- Checkpoint Location
            * 3- Save Location
            */
           switch (this.currentBtnGroupIndex) {
@@ -247,7 +248,7 @@ export default class Map extends Component {
               // Q Use dragend?
               this.sourceMarker.on("drag", () => {
                 console.debug(
-                  "Drageging Source Marker",
+                  "Dragging Source Marker",
                   this.sourceMarker.getLngLat()
                 );
                 this.setState({
@@ -610,15 +611,17 @@ export default class Map extends Component {
     return (
       <div className="container-fluid no-pm">
         <div className="map-tool-container">
-          <Link to="/" />
+          <Link to="/">
+            <img src={require("../../img/avl.png")} alt="" />
+          </Link>
         </div>
         <div className="row no-pm">
           {/* SIDEBAR TABS */}
           <div className="col-3 no-pm sidebar">
-            <div className="row justify-content-center no-pm">
+            <div className="row justify-content-center no-pm w-100">
               <div
                 id="tab-btn-group"
-                className="btn-group btn-group-toggle p-2"
+                className="btn-group btn-group-toggle mb-4 w-100"
                 data-toggle="buttons"
                 // onClick={this.onTabButtonClick}
               >

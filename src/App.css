@@ -52,7 +52,7 @@ body {
   position: absolute;
   top: 0;
   right: 0;
-  background: url("./img/avl.png");
+  /* background: url("./img/avl.png"); */
   background-size: cover;
   background-position: center;
   max-width: 12vw;
