@@ -137,16 +137,16 @@ export default class Map extends Component {
         console.debug("MouseEnter event");
         this.mapCanvas.style.cursor = "move";
       });
-
+      /* 
       this.map.on("mouseleave", "clicked-points", () => {
         console.debug("Mouseleave event");
         this.map.setPaintProperty("clicked-points", "circle-color", "#295c86");
         this.mapCanvas.style.cursor = "";
-      });
+      }); */
 
       this.map.on("mousedown", "clicked-points", e => {
         console.debug("MouseDown event");
-        this.mapCanvas.style.cursor = "drag";
+        // this.mapCanvas.style.cursor = "drag";
         e.preventDefault();
         switch (e.originalEvent.which) {
           case 1:
@@ -349,7 +349,7 @@ export default class Map extends Component {
 
   onMove = e => {
     console.debug("MouseMove event");
-    this.mapCanvas.style.cursor = "grabbing";
+    // this.mapCanvas.style.cursor = "grabbing";
     const coords = e.lngLat;
     const savedLocationsClone = this.state.savedLocations;
     if (this.clickedPointIndex !== -1) {
@@ -363,7 +363,7 @@ export default class Map extends Component {
 
   onUp = e => {
     console.debug("MouseUp event");
-    this.mapCanvas.style.cursor = "";
+    // this.mapCanvas.style.cursor = "";
     this.clickedPointIndex = -1;
     this.map.off("mousemove", this.onMove);
   };
@@ -614,6 +614,12 @@ export default class Map extends Component {
           <Link to="/">
             <img src={require("../../img/avl.png")} alt="" />
           </Link>
+        </div>
+        <div id="toast">
+          <div id="img">
+            <i className="fas fa-tachometer-alt fa-lg" />
+          </div>
+          <div id="desc">Started collecting traffic data</div>
         </div>
         <div className="row no-pm">
           {/* SIDEBAR TABS */}

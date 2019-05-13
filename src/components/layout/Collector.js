@@ -5,7 +5,9 @@ import classnames from "classnames";
 export default class Collector extends Component {
   constructor(props) {
     super(props);
-    this.state = {};
+    this.state = {
+      isCollecting: false
+    };
 
     this.currentBtnGroupIndex = 0;
     this.isSourceLatInvalid = null;
@@ -106,15 +108,23 @@ export default class Collector extends Component {
 
   onStartSubmit = e => {
     console.debug("Collector Start Submit Event");
+    this.setState({ isCollecting: true });
     e.preventDefault();
-    window.alert("Started collecting!");
+    const x = document.getElementById("toast");
+    x.className = "show";
+    setTimeout(function() {
+      x.className = x.className.replace("show", "");
+    }, 5000);
+    setTimeout(() => {
+      this.setState({ isCollecting: false });
+    }, 7500);
   };
 
   render() {
     console.debug("Collector rendering again");
     return (
       <React.Fragment>
-        <form onSubmit={e => this.onStartSubmit}>
+        <form onSubmit={this.onStartSubmit}>
           <div className="form-group ">
             {/* Source Latitude */}
             <div className="input-group mt-3">
@@ -308,9 +318,24 @@ export default class Collector extends Component {
             </div>
             <div className="col text-center">
               <button
-                type="submit"
-                className="btn btn-primary text-center m-1 mt-2"
+                className={classnames("btn btn-primary prp10", {
+                  disabled: this.state.isCollecting
+                })}
+                type="button"
+                onClick={this.onStartSubmit}
               >
+                <span
+                  id="collector-spinner"
+                  className={classnames(
+                    "spinner-grow spinner-grow-sm hide m-1",
+                    {
+                      visible: this.state.isCollecting,
+                      invisible: !this.state.isCollecting
+                    }
+                  )}
+                  role="status"
+                  aria-hidden="true"
+                />
                 Start
               </button>
             </div>
