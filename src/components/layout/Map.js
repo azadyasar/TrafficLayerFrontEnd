@@ -306,9 +306,19 @@ export default class Map extends Component {
                 .addTo(this.map);
 
               checkpointMarker.on("drag", e => {
-                console.log(e);
+                const { checkpoints } = this.state;
+                const checkpointIndex = e.target._element.getAttribute(
+                  "data-key"
+                );
+                const checkpointTmp = e.target._lngLat;
+                checkpointTmp.desc = checkpoints[checkpointIndex].desc;
+                checkpoints[checkpointIndex] = checkpointTmp;
+                this.setState({ checkpoints });
               });
               this.checkPointMarkers.push(checkpointMarker);
+              this.setState({
+                checkpoints: [...this.state.checkpoints, e.lngLat]
+              });
               break;
             default:
               break;
@@ -377,10 +387,17 @@ export default class Map extends Component {
   };
 
   flyToStore(currentFeature) {
-    this.map.flyTo({
-      center: currentFeature.geometry.coordinates,
-      zoom: 13
-    });
+    if (currentFeature.geometry && currentFeature.geometry.coordinates) {
+      this.map.flyTo({
+        center: currentFeature.geometry.coordinates,
+        zoom: 15
+      });
+    } else {
+      this.map.flyTo({
+        center: [currentFeature.lng, currentFeature.lat],
+        zoom: 15
+      });
+    }
   }
 
   createPopUp(currentFeature, index = 0) {
@@ -429,24 +446,29 @@ export default class Map extends Component {
 
   onLocationClick = event => {
     // DISABLED FOR NOW
-    return;
-    const clickedLocation =
-      defaultLocations.features[event.target.getAttribute("dataposition")];
-    // 1. Fly to the point associated with the clicked link.
-    this.flyToStore(clickedLocation);
-    // 2. Close all other popups and display popup for clicked store.
-    this.createPopUp(clickedLocation);
-    // 3. Highlight listing in sidebar (and remove highlight for all other listings)
-
     const listings = document.getElementById("listings");
     if (listings) {
       const activeItem = listings.getElementsByClassName("active");
       if (activeItem[0]) activeItem[0].classList.remove("active");
-      if (activeItem[0]) {
-        console.log(`Current activeItem: ${activeItem[0]}`);
-        activeItem[0].classList.remove("active");
-      }
-      event.target.parentNode.classList.add("active");
+    }
+    event.target.parentNode.classList.add("active");
+
+    const coordType = event.target.getAttribute("data-source");
+    const index = event.target.getAttribute("dataposition");
+    switch (coordType) {
+      case "Source":
+        this.flyToStore(this.state.sourceCoord);
+        break;
+      case "Destination":
+        this.flyToStore(this.state.destCoord);
+        break;
+      case "Checkpoint":
+        // first two items are source and dest coordinates. So we need to skip them
+        this.flyToStore(this.state.checkpoints[index - 2]);
+        break;
+      default:
+        console.warn("Unknown datasource within location click: ", coordType);
+        break;
     }
   };
 
@@ -512,15 +534,21 @@ export default class Map extends Component {
   onCollectorStartBtn = event => {
     const sourceCoord = this.state.sourceCoord;
     const destCoord = this.state.destCoord;
+    let checkpointQueryStr = "";
+    this.state.checkpoints.forEach(checkpoint => {
+      checkpointQueryStr += checkpoint.lat + "," + checkpoint.lng + ",";
+    });
     axios
       .get("/api/v1/avl/route", {
         params: {
           source: sourceCoord.lat + "," + sourceCoord.lng,
-          dest: destCoord.lat + "," + destCoord.lng
+          dest: destCoord.lat + "," + destCoord.lng,
+          checkpoints: checkpointQueryStr
         }
       })
       .then(response => {
         console.debug("Axios got response for /route request");
+        toast.success("Route has been calculated!");
         console.debug(response);
         const routeCoords = [];
         response.data.points.forEach(point => {
@@ -536,23 +564,32 @@ export default class Map extends Component {
   };
 
   buildLocationList() {
-    const renderedStores = defaultLocations.features.map((store, idx) => {
-      const prop = store.properties;
+    const { sourceCoord, destCoord, checkpoints } = this.state;
+    if (sourceCoord) sourceCoord.desc = "Source";
+    if (destCoord) destCoord.desc = "Destination";
+    checkpoints.forEach(checkpoint => (checkpoint.desc = "Checkpoint"));
+    const coords = [sourceCoord, destCoord, ...checkpoints];
+
+    const renderRadioInfo = coords.map((coord, idx) => {
+      if (!coord) return;
+      if (!coord.desc) return;
       return (
         <div className="item" key={`listing-${idx}`} id={`listing-${idx}`}>
           <a
             href="#"
             className="title"
             dataposition={idx}
+            data-source={coord.desc}
             onClick={this.onLocationClick}
           >
-            {prop.address}
+            {coord.desc} {coord.desc.startsWith("Checkpoint") && `- ${idx - 1}`}
           </a>
-          <div>{prop.city}</div>
+          <div>{`${coord.lat.toFixed(4)} - ${coord.lng.toFixed(4)}`}</div>
         </div>
       );
     });
-    return renderedStores;
+
+    return renderRadioInfo;
   }
 
   buildClickedLocationList() {
@@ -654,7 +691,7 @@ export default class Map extends Component {
           <div id="img">
             <i className="fas fa-tachometer-alt fa-lg" />
           </div>
-          <div id="desc">Started collecting traffic data</div>
+          <div id="desc">Started collecting traffic data...</div>
         </div>
         <div className="row no-pm">
           {/* SIDEBAR TABS */}

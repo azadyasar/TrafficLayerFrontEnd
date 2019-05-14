@@ -147,6 +147,7 @@ body {
   display: block;
   color: #4956e9;
   font-weight: 700;
+  padding-bottom: 2%;
 }
 
 .listings .item .title small {
@@ -159,7 +160,7 @@ body {
 }
 
 .listings .item.active {
-  background-color: #cfdeeb;
+  background-color: #7ba1c2;
 }
 
 ::-webkit-scrollbar {
@@ -306,6 +307,15 @@ body {
 
 .prp10 {
   padding-right: 10%;
+}
+
+.style_dropdown {
+  right: 75%;
+  bottom: 1%;
+}
+
+.dropdown_width {
+  width: 30%;
 }
 
 /* Animated Toaster */

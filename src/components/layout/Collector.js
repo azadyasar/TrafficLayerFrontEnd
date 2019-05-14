@@ -109,6 +109,12 @@ export default class Collector extends Component {
 
   onStartSubmit = e => {
     console.debug("Collector Start Submit Event");
+
+    if (!this.props.sourceCoord || !this.props.destCoord) {
+      toast.error("Choose source and destination coordinates!");
+      return;
+    }
+
     if (this.state.isCollecting) {
       console.debug("Collector is in progress");
       toast.warn("Please wait for collector to finish");
@@ -122,7 +128,6 @@ export default class Collector extends Component {
       x.className = x.className.replace("show", "");
     }, 5000);
     this.props.onCollectorStartBtn(e);
-    toast.success("Route has been calculated!");
     this.setState({ isCollecting: false });
     // setTimeout(() => {
     //   this.setState({ isCollecting: false });
@@ -316,7 +321,7 @@ export default class Collector extends Component {
               </div>
             </div>
 
-            <div className="form-check form-check-sm  mt-3 mr-2 ml-2">
+            {/* <div className="form-check form-check-sm  mt-3 mr-2 ml-2">
               <input
                 type="checkbox"
                 className="form-check-input"
@@ -325,8 +330,8 @@ export default class Collector extends Component {
               <label className="form-check-label mb-2">
                 Use custom resolution
               </label>
-            </div>
-            <div className="col text-center">
+            </div> */}
+            <div className="row text-center justify-content-center mt-4">
               <button
                 className={classnames("btn btn-primary prp10", {
                   disabled: this.state.isCollecting
@@ -351,8 +356,8 @@ export default class Collector extends Component {
             </div>
           </div>
         </form>
-        <div className="row justify-content-center mt-2">
-          <div className="btn-group dropup justify-content-center">
+        <div className="row justify-content-center mt-2 fixed-bottom style_dropdown">
+          <div className="btn-group dropup justify-content-center dropdown_width">
             <button
               type="button"
               className="btn btn-info dropdown-toggle"
