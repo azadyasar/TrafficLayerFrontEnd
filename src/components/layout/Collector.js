@@ -1,6 +1,7 @@
 import React, { Component } from "react";
 import PropTypes from "prop-types";
 import classnames from "classnames";
+import { ToastContainer, toast } from "react-toastify";
 
 export default class Collector extends Component {
   constructor(props) {
@@ -108,6 +109,11 @@ export default class Collector extends Component {
 
   onStartSubmit = e => {
     console.debug("Collector Start Submit Event");
+    if (this.state.isCollecting) {
+      console.debug("Collector is in progress");
+      toast.warn("Please wait for collector to finish");
+      return;
+    }
     this.setState({ isCollecting: true });
     e.preventDefault();
     const x = document.getElementById("toast");
@@ -115,15 +121,19 @@ export default class Collector extends Component {
     setTimeout(function() {
       x.className = x.className.replace("show", "");
     }, 5000);
-    setTimeout(() => {
-      this.setState({ isCollecting: false });
-    }, 7500);
+    this.props.onCollectorStartBtn(e);
+    toast.success("Route has been calculated!");
+    this.setState({ isCollecting: false });
+    // setTimeout(() => {
+    //   this.setState({ isCollecting: false });
+    // }, 7500);
   };
 
   render() {
     console.debug("Collector rendering again");
     return (
       <React.Fragment>
+        <ToastContainer />
         <form onSubmit={this.onStartSubmit}>
           <div className="form-group ">
             {/* Source Latitude */}
@@ -400,6 +410,7 @@ Collector.propTypes = {
   onBtnGroupClick: PropTypes.func.isRequired,
   onStyleChange: PropTypes.func.isRequired,
   onCoordInputChange: PropTypes.func.isRequired,
+  onCollectorStartBtn: PropTypes.func.isRequired,
   sourceCoord: PropTypes.object,
   destCoord: PropTypes.object
 };

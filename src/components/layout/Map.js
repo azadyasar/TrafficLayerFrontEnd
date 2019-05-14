@@ -2,6 +2,8 @@ import React, { Component } from "react";
 import { Link } from "react-router-dom";
 import mapboxgl from "mapbox-gl";
 import Collector from "./Collector";
+import axios from "axios";
+import { toast } from "react-toastify";
 const turf = require("@turf/turf");
 
 const istCoord = {
@@ -25,6 +27,7 @@ export default class Map extends Component {
       savedLocations: turf.featureCollection([]),
       sourceCoord: null,
       destCoord: null,
+      routeLine: null,
       checkpoints: []
     };
 
@@ -36,6 +39,7 @@ export default class Map extends Component {
     this.sourceMarker = null;
     this.destMarker = null;
     this.checkPointMarkers = [];
+    this.routeCoordsGEO = null;
 
     this.renderFunctions = [
       this.renderLocations,
@@ -50,6 +54,8 @@ export default class Map extends Component {
       "outdoors-v11",
       "satellite-v9"
     ];
+
+    axios.defaults.baseURL = "http://avl-trafficflow-v1.herokuapp.com:80";
   }
 
   _onViewPortChange = viewport =>
@@ -89,29 +95,31 @@ export default class Map extends Component {
             "icon-allow-overlap": false
           } */
       });
+
+      this.map.addSource("route-source", {
+        type: "geojson",
+        data: this.routeCoordsGEO
+      });
+
+      this.map.addLayer({
+        id: "route",
+        type: "line",
+        source: "route-source",
+        layout: {
+          "line-join": "round",
+          "line-cap": "round"
+        },
+        paint: {
+          "line-color": "#179dbe",
+          "line-width": 4
+        }
+      });
     });
 
     this.map.on("load", e => {
       this.map.addSource("places", {
         type: "geojson",
         data: defaultLocations
-      });
-
-      this.map.addLayer({
-        id: "route",
-        type: "line",
-        source: {
-          type: "geojson",
-          data: customLine
-        },
-        layout: {
-          "line-join": "round",
-          "line-cap": "round"
-        },
-        paint: {
-          "line-color": "#888",
-          "line-width": 4
-        }
       });
 
       /* this.map.addSource("clicked-points", {
@@ -501,6 +509,32 @@ export default class Map extends Component {
       this.destMarker.setLngLat(this.state.destCoord);
   };
 
+  onCollectorStartBtn = event => {
+    const sourceCoord = this.state.sourceCoord;
+    const destCoord = this.state.destCoord;
+    axios
+      .get("/api/v1/avl/route", {
+        params: {
+          source: sourceCoord.lat + "," + sourceCoord.lng,
+          dest: destCoord.lat + "," + destCoord.lng
+        }
+      })
+      .then(response => {
+        console.debug("Axios got response for /route request");
+        console.debug(response);
+        const routeCoords = [];
+        response.data.points.forEach(point => {
+          routeCoords.push([point.long, point.lat]);
+        });
+        this.routeCoordsGEO = turf.lineString(routeCoords);
+        this.map.getSource("route-source").setData(this.routeCoordsGEO);
+      })
+      .catch(error => {
+        console.debug("Error occured during axios get request", error);
+        toast.error("An error occured during route calculation");
+      });
+  };
+
   buildLocationList() {
     const renderedStores = defaultLocations.features.map((store, idx) => {
       const prop = store.properties;
@@ -602,6 +636,7 @@ export default class Map extends Component {
         destCoord={this.state.destCoord}
         onStyleChange={this.onStyleChange}
         onCoordInputChange={this.onCoordInputChange}
+        onCollectorStartBtn={this.onCollectorStartBtn}
       />
     );
   };
