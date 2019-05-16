@@ -143,7 +143,7 @@ export default class Collector extends Component {
           <div className="form-group ">
             {/* Source Latitude */}
             <div className="input-group mt-3">
-              <div className="input-group-prepend">
+              <div className="input-group-prepend w-25">
                 <span className="input-group-text">
                   <i className="fas fa-map-marker-alt" />
                   <h6 className="ml-2 mt-2"> Lat</h6>
@@ -151,7 +151,7 @@ export default class Collector extends Component {
               </div>
               <input
                 type="number"
-                className={classnames("form-control", {
+                className={classnames("form-control w-75", {
                   "is-invalid": this.isSourceLatInvalid
                 })}
                 placeholder="Source Latitude"
@@ -171,7 +171,7 @@ export default class Collector extends Component {
             </div>
             {/* Source Longitude */}
             <div className="input-group mt-3">
-              <div className="input-group-prepend">
+              <div className="input-group-prepend w-25">
                 <span className="input-group-text">
                   <i className="fas fa-map-marker-alt" />
                   <h6 className="ml-2 mt-2"> Lng</h6>
@@ -179,7 +179,7 @@ export default class Collector extends Component {
               </div>
               <input
                 type="number"
-                className={classnames("form-control", {
+                className={classnames("form-control w-75", {
                   "is-invalid": this.isSourceLngInvalid
                 })}
                 placeholder="Source Longitude"
@@ -199,7 +199,7 @@ export default class Collector extends Component {
             </div>
             {/* Destination Latitude */}
             <div className="input-group mt-3">
-              <div className="input-group-prepend">
+              <div className="input-group-prepend w-25">
                 <span className="input-group-text" id="longitude">
                   <i className="fas fa-directions" />
                   <h6 className="ml-1 mt-2"> Lat</h6>
@@ -207,7 +207,7 @@ export default class Collector extends Component {
               </div>
               <input
                 type="number"
-                className={classnames("form-control", {
+                className={classnames("form-control w-75", {
                   "is-invalid": this.isDestLatInvalid
                 })}
                 placeholder="Destination Latitude"
@@ -227,7 +227,7 @@ export default class Collector extends Component {
             </div>
             {/* Destination Longitude */}
             <div className="input-group mt-3">
-              <div className="input-group-prepend">
+              <div className="input-group-prepend w-25">
                 <span className="input-group-text" id="longitude">
                   <i className="fas fa-directions" />
                   <h6 className="ml-1 mt-2"> Lng</h6>
@@ -235,7 +235,7 @@ export default class Collector extends Component {
               </div>
               <input
                 type="number"
-                className={classnames("form-control", {
+                className={classnames("form-control w-75", {
                   "is-invalid": this.isDestLngInvalid
                 })}
                 placeholder="Destination Longitude"
@@ -331,7 +331,7 @@ export default class Collector extends Component {
                 Use custom resolution
               </label>
             </div> */}
-            <div className="row text-center justify-content-center mt-4">
+            <div className="row text-center justify-content-center no-pm mt-4">
               <button
                 className={classnames("btn btn-primary prp10", {
                   disabled: this.state.isCollecting
@@ -356,7 +356,7 @@ export default class Collector extends Component {
             </div>
           </div>
         </form>
-        <div className="row justify-content-center mt-2 fixed-bottom style_dropdown">
+        <div className="row justify-content-center no-pm mt-2 fixed-bottom style_dropdown">
           <div className="btn-group dropup justify-content-center dropdown_width">
             <button
               type="button"

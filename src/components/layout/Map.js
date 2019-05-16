@@ -39,6 +39,7 @@ export default class Map extends Component {
     this.sourceMarker = null;
     this.destMarker = null;
     this.checkPointMarkers = [];
+    this.checkPointMarkerElements = [];
     this.routeCoordsGEO = null;
 
     this.renderFunctions = [
@@ -145,12 +146,12 @@ export default class Map extends Component {
         console.debug("MouseEnter event");
         this.mapCanvas.style.cursor = "move";
       });
-      /* 
+
       this.map.on("mouseleave", "clicked-points", () => {
         console.debug("Mouseleave event");
         this.map.setPaintProperty("clicked-points", "circle-color", "#295c86");
         this.mapCanvas.style.cursor = "";
-      }); */
+      });
 
       this.map.on("mousedown", "clicked-points", e => {
         console.debug("MouseDown event");
@@ -215,13 +216,13 @@ export default class Map extends Component {
       }); */
     });
 
-    this.map.on("contextmenu", e => {
+    /* this.map.on("contextmenu", e => {
       console.debug("ContextMenu event");
       e.preventDefault();
       this.mapCanvas.style.cursor = "grab";
       this.newDropoff(this.map.unproject(e.point));
       this.updateDropoffs();
-    });
+    }); */
 
     this.map.on("click", e => {
       /** Tabs:
@@ -297,13 +298,42 @@ export default class Map extends Component {
               checkpointMarkerEl.className = "fas fa-road fa-lg";
               checkpointMarkerEl.setAttribute(
                 "data-key",
-                this.checkPointMarkers.length
+                this.checkPointMarkerElements.length
               );
               const checkpointMarker = new mapboxgl.Marker(checkpointMarkerEl, {
                 draggable: true
               })
                 .setLngLat(e.lngLat)
                 .addTo(this.map);
+
+              checkpointMarkerEl.addEventListener("contextmenu", e => {
+                console.debug("Double click checkpoint marker");
+                const checkpointIndex = parseInt(
+                  e.target.getAttribute("data-key")
+                );
+                console.debug("Index: ", checkpointIndex);
+                for (
+                  let i = checkpointIndex + 1;
+                  i < this.checkPointMarkerElements.length;
+                  i++
+                ) {
+                  this.checkPointMarkerElements[i].setAttribute(
+                    "data-key",
+                    i - 1
+                  );
+                }
+                this.checkPointMarkers.splice(checkpointIndex, 1);
+                const clickedMarkerEl = this.checkPointMarkerElements.splice(
+                  checkpointIndex,
+                  1
+                )[0];
+                if (clickedMarkerEl) clickedMarkerEl.remove();
+                const stateCheckpointsClone = [...this.state.checkpoints];
+                stateCheckpointsClone.splice(checkpointIndex, 1);
+                this.setState({ checkpoints: stateCheckpointsClone });
+              });
+
+              this.checkPointMarkerElements.push(checkpointMarkerEl);
 
               checkpointMarker.on("drag", e => {
                 const { checkpoints } = this.state;
@@ -319,8 +349,15 @@ export default class Map extends Component {
               this.setState({
                 checkpoints: [...this.state.checkpoints, e.lngLat]
               });
+
               break;
             default:
+              console.warn(
+                "Event left for default within switch table currentTab: ",
+                this.state.currentTab,
+                ", btnGroupIndex: ",
+                this.currentBtnGroupIndex
+              );
               break;
           }
           break;
@@ -534,16 +571,16 @@ export default class Map extends Component {
   onCollectorStartBtn = event => {
     const sourceCoord = this.state.sourceCoord;
     const destCoord = this.state.destCoord;
-    let checkpointQueryStr = "";
+    let checkpointsQueryStr = "";
     this.state.checkpoints.forEach(checkpoint => {
-      checkpointQueryStr += checkpoint.lat + "," + checkpoint.lng + ",";
+      checkpointsQueryStr += checkpoint.lat + "," + checkpoint.lng + ",";
     });
     axios
       .get("/api/v1/avl/route", {
         params: {
           source: sourceCoord.lat + "," + sourceCoord.lng,
           dest: destCoord.lat + "," + destCoord.lng,
-          checkpoints: checkpointQueryStr
+          checkpoints: checkpointsQueryStr
         }
       })
       .then(response => {
@@ -551,8 +588,10 @@ export default class Map extends Component {
         toast.success("Route has been calculated!");
         console.debug(response);
         const routeCoords = [];
-        response.data.points.forEach(point => {
-          routeCoords.push([point.long, point.lat]);
+        response.data.legs.forEach(leg => {
+          leg.points.forEach(point => {
+            routeCoords.push([point.long, point.lat]);
+          });
         });
         this.routeCoordsGEO = turf.lineString(routeCoords);
         this.map.getSource("route-source").setData(this.routeCoordsGEO);
