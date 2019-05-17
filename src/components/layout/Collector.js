@@ -2,6 +2,8 @@ import React, { Component } from "react";
 import PropTypes from "prop-types";
 import classnames from "classnames";
 import { ToastContainer, toast } from "react-toastify";
+import ClipLoader from "react-spinners/ClipLoader";
+import { ClimbingBoxLoader } from "react-spinners";
 
 export default class Collector extends Component {
   constructor(props) {
@@ -37,7 +39,8 @@ export default class Collector extends Component {
   componentWillReceiveProps(newProps) {
     this.setState({
       sourceCoord: newProps.sourceCoord,
-      destCoord: newProps.destCoord
+      destCoord: newProps.destCoord,
+      isCollecting: newProps.isCollecting
     });
   }
 
@@ -107,8 +110,8 @@ export default class Collector extends Component {
     );
   };
 
-  onStartSubmit = e => {
-    console.debug("Collector Start Submit Event");
+  onRouteClick = e => {
+    console.debug("Collector Route Click Event");
 
     if (!this.props.sourceCoord || !this.props.destCoord) {
       toast.error("Choose source and destination coordinates!");
@@ -116,22 +119,50 @@ export default class Collector extends Component {
     }
 
     if (this.state.isCollecting) {
-      console.debug("Collector is in progress");
-      toast.warn("Please wait for collector to finish");
+      console.debug("Router called while in progress");
+      toast.warn("Please wait for router to finish");
       return;
     }
     this.setState({ isCollecting: true });
     e.preventDefault();
-    const x = document.getElementById("toast");
-    x.className = "show";
-    setTimeout(function() {
-      x.className = x.className.replace("show", "");
-    }, 5000);
+    const toastElement = document.getElementById("toast");
+    console.debug(toastElement);
+    const toastText = toastElement.getElementsByClassName("desc")[0];
+    if (toastText) toastText.textContent = "Started calculating a route...";
+    if (toastElement) {
+      toastElement.className = "show";
+      setTimeout(function() {
+        toastElement.className = toastElement.className.replace("show", "");
+      }, 5000);
+    }
     this.props.onCollectorStartBtn(e);
-    this.setState({ isCollecting: false });
-    // setTimeout(() => {
-    //   this.setState({ isCollecting: false });
-    // }, 7500);
+  };
+
+  onCollectClick = e => {
+    console.debug("Collector Collect Click Event");
+
+    if (!this.props.sourceCoord || !this.props.destCoord) {
+      toast.error("Choose source and destination coordinates!");
+      return;
+    }
+
+    if (this.state.isCollecting) {
+      console.debug("Router called while in progress");
+      toast.warn("Please wait for router to finish");
+      return;
+    }
+    this.setState({ isCollecting: true });
+    e.preventDefault();
+    const toastElement = document.getElementById("toast");
+    const toastText = toastElement.getElementsByClassName("desc")[0];
+    if (toastText) toastText.textContent = "Started collecting traffic data...";
+    if (toastElement) {
+      toastElement.className = "show";
+      setTimeout(() => {
+        toastElement.className = toastElement.className.replace("show", "");
+        this.setState({ isCollecting: false });
+      }, 5000);
+    }
   };
 
   render() {
@@ -139,7 +170,7 @@ export default class Collector extends Component {
     return (
       <React.Fragment>
         <ToastContainer />
-        <form onSubmit={this.onStartSubmit}>
+        <form onSubmit={this.onRouteClick}>
           <div className="form-group ">
             {/* Source Latitude */}
             <div className="input-group mt-3">
@@ -333,26 +364,33 @@ export default class Collector extends Component {
             </div> */}
             <div className="row text-center justify-content-center no-pm mt-4">
               <button
-                className={classnames("btn btn-primary prp10", {
+                className={classnames("btn btn-primary m-1 cl-6", {
                   disabled: this.state.isCollecting
                 })}
                 type="button"
-                onClick={this.onStartSubmit}
+                onClick={this.onRouteClick}
               >
-                <span
-                  id="collector-spinner"
-                  className={classnames(
-                    "spinner-grow spinner-grow-sm hide m-1",
-                    {
-                      visible: this.state.isCollecting,
-                      invisible: !this.state.isCollecting
-                    }
-                  )}
-                  role="status"
-                  aria-hidden="true"
-                />
-                Start
+                Route
               </button>
+
+              <button
+                className={classnames("btn btn-primary m-1 cl-6", {
+                  disabled: this.state.isCollecting
+                })}
+                type="button"
+                onClick={this.onCollectClick}
+              >
+                Collect
+              </button>
+            </div>
+            <div className="row sweet-loading  justify-content-center">
+              <ClimbingBoxLoader
+                // css={override}
+                sizeUnit={"px"}
+                size={15}
+                color={"#123abc"}
+                loading={this.state.isCollecting}
+              />
             </div>
           </div>
         </form>
@@ -417,5 +455,6 @@ Collector.propTypes = {
   onCoordInputChange: PropTypes.func.isRequired,
   onCollectorStartBtn: PropTypes.func.isRequired,
   sourceCoord: PropTypes.object,
-  destCoord: PropTypes.object
+  destCoord: PropTypes.object,
+  isCollecting: PropTypes.bool
 };

@@ -28,7 +28,8 @@ export default class Map extends Component {
       sourceCoord: null,
       destCoord: null,
       routeLine: null,
-      checkpoints: []
+      checkpoints: [],
+      isCollecting: false
     };
 
     this.clickedPoints = turf.featureCollection([]);
@@ -568,7 +569,7 @@ export default class Map extends Component {
       this.destMarker.setLngLat(this.state.destCoord);
   };
 
-  onCollectorStartBtn = event => {
+  onCollectorStartBtn = async event => {
     const sourceCoord = this.state.sourceCoord;
     const destCoord = this.state.destCoord;
     let checkpointsQueryStr = "";
@@ -595,9 +596,11 @@ export default class Map extends Component {
         });
         this.routeCoordsGEO = turf.lineString(routeCoords);
         this.map.getSource("route-source").setData(this.routeCoordsGEO);
+        this.setState({ isCollecting: false });
       })
       .catch(error => {
         console.debug("Error occured during axios get request", error);
+        this.setState({ isCollecting: false });
         toast.error("An error occured during route calculation");
       });
   };
@@ -713,6 +716,7 @@ export default class Map extends Component {
         onStyleChange={this.onStyleChange}
         onCoordInputChange={this.onCoordInputChange}
         onCollectorStartBtn={this.onCollectorStartBtn}
+        isCollecting={this.state.isCollecting}
       />
     );
   };
@@ -730,7 +734,7 @@ export default class Map extends Component {
           <div id="img">
             <i className="fas fa-tachometer-alt fa-lg" />
           </div>
-          <div id="desc">Started collecting traffic data...</div>
+          <div id="desc" className="desc" />
         </div>
         <div className="row no-pm">
           {/* SIDEBAR TABS */}
