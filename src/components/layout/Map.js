@@ -58,6 +58,7 @@ export default class Map extends Component {
     ];
 
     axios.defaults.baseURL = "http://avl-trafficflow-v1.herokuapp.com:80";
+    // axios.defaults.baseURL = "http://localhost:5555";
   }
 
   _onViewPortChange = viewport =>
@@ -620,18 +621,14 @@ export default class Map extends Component {
     const coords = this.routeCoordsGEO.geometry.coordinates;
     console.debug("Coords: ", coords, ", length: " + coords.length);
     // /api/v1/avl/batchFlow
-    let coordsQueryStr = "";
+    let coordsQueryStr = "coords=";
     coords.forEach(coord => {
       // Coordinates are stored as Longitude-Latitude pairs withing GeoJSON
       coordsQueryStr += coord[1] + "," + coord[0] + ",";
     });
 
     axios
-      .get("/api/v1/avl/batchFlow", {
-        params: {
-          coords: coordsQueryStr
-        }
-      })
+      .post("/api/v1/avl/batchFlow", coordsQueryStr)
       .then(response => {
         console.debug("Axios got response for /batchFlow request");
         toast.success("Traffic data has been collected!");
