@@ -2,7 +2,6 @@ import React, { Component } from "react";
 import PropTypes from "prop-types";
 import classnames from "classnames";
 import { ToastContainer, toast } from "react-toastify";
-import ClipLoader from "react-spinners/ClipLoader";
 import { ClimbingBoxLoader } from "react-spinners";
 
 export default class Collector extends Component {
@@ -64,6 +63,10 @@ export default class Collector extends Component {
     console.log(e);
   };
 
+  /**
+   * @todo When the user manually changes the coordinate and the invalid feedback is activated via
+   * Invalid flag, it won't be reset when the user changes it with the marker. Fix.
+   */
   onCoordInputChange = e => {
     console.debug("onCoordInputChange fired", e);
     const coord = this.props[e.target.name];
@@ -119,16 +122,14 @@ export default class Collector extends Component {
     }
 
     if (this.state.isCollecting) {
-      console.debug("Router called while in progress");
-      toast.warn("Please wait for router to finish");
+      toast.warn("Please wait until the route is calculated");
       return;
     }
     this.setState({ isCollecting: true });
     e.preventDefault();
     const toastElement = document.getElementById("toast");
-    console.debug(toastElement);
     const toastText = toastElement.getElementsByClassName("desc")[0];
-    if (toastText) toastText.textContent = "Started calculating a route...";
+    if (toastText) toastText.textContent = "Started calculating the route...";
     if (toastElement) {
       toastElement.className = "show";
       setTimeout(function() {
@@ -147,12 +148,12 @@ export default class Collector extends Component {
     }
 
     if (this.state.isCollecting) {
-      console.debug("Router called while in progress");
       toast.warn("Please wait for router to finish");
       return;
     }
     this.setState({ isCollecting: true });
     e.preventDefault();
+    this.props.onCollectorCollectBtn(e);
     const toastElement = document.getElementById("toast");
     const toastText = toastElement.getElementsByClassName("desc")[0];
     if (toastText) toastText.textContent = "Started collecting traffic data...";
@@ -160,7 +161,6 @@ export default class Collector extends Component {
       toastElement.className = "show";
       setTimeout(() => {
         toastElement.className = toastElement.className.replace("show", "");
-        this.setState({ isCollecting: false });
       }, 5000);
     }
   };
@@ -454,6 +454,7 @@ Collector.propTypes = {
   onStyleChange: PropTypes.func.isRequired,
   onCoordInputChange: PropTypes.func.isRequired,
   onCollectorStartBtn: PropTypes.func.isRequired,
+  onCollectorCollectBtn: PropTypes.func.isRequired,
   sourceCoord: PropTypes.object,
   destCoord: PropTypes.object,
   isCollecting: PropTypes.bool

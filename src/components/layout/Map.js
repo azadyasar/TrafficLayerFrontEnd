@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import mapboxgl from "mapbox-gl";
 import Collector from "./Collector";
 import axios from "axios";
-import { toast } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
 const turf = require("@turf/turf");
 
 const istCoord = {
@@ -46,7 +46,7 @@ export default class Map extends Component {
     this.renderFunctions = [
       this.renderLocations,
       this.renderCollector,
-      this.renderThirdTab
+      this.renderRadio
     ];
 
     this.mapStyles = [
@@ -569,6 +569,9 @@ export default class Map extends Component {
       this.destMarker.setLngLat(this.state.destCoord);
   };
 
+  /**
+   * Triggered when the user clicks the `Route` button within the Radio tab.
+   */
   onCollectorStartBtn = async event => {
     const sourceCoord = this.state.sourceCoord;
     const destCoord = this.state.destCoord;
@@ -602,6 +605,61 @@ export default class Map extends Component {
         console.debug("Error occured during axios get request", error);
         this.setState({ isCollecting: false });
         toast.error("An error occured during route calculation");
+      });
+  };
+
+  /**
+   * Triggered when the user clicks the `Collect` button within the Radio tab.
+   */
+  onCollectorCollectBtn = async event => {
+    if (!this.routeCoordsGEO) {
+      toast.warn("Calculate a route first!");
+      return;
+    }
+
+    const coords = this.routeCoordsGEO.geometry.coordinates;
+    console.debug("Coords: ", coords, ", length: " + coords.length);
+    // /api/v1/avl/batchFlow
+    let coordsQueryStr = "";
+    coords.forEach(coord => {
+      // Coordinates are stored as Longitude-Latitude pairs withing GeoJSON
+      coordsQueryStr += coord[1] + "," + coord[0] + ",";
+    });
+
+    axios
+      .get("/api/v1/avl/batchFlow", {
+        params: {
+          coords: coordsQueryStr
+        }
+      })
+      .then(response => {
+        console.debug("Axios got response for /batchFlow request");
+        toast.success("Traffic data has been collected!");
+        this.setState({ isCollecting: false });
+        console.debug("Response: ", response);
+
+        // Download the CSV file
+        const element = document.createElement("a");
+        element.setAttribute(
+          "href",
+          "data:text/plain;charset=utf-8," + convertToCSV(response.data)
+        );
+        element.setAttribute(
+          "download",
+          "AVL_TrafficLayer_" + Date.now() + ".csv"
+        );
+        element.style.display = "none";
+        document.body.appendChild(element);
+        element.click();
+        document.body.removeChild(element);
+      })
+      .catch(error => {
+        console.debug(
+          "Error occured during axios get request to /batchFlow",
+          error
+        );
+        this.setState({ isCollecting: false });
+        toast.error("An error occured during traffic data collection");
       });
   };
 
@@ -707,7 +765,7 @@ export default class Map extends Component {
     );
   };
 
-  renderThirdTab = () => {
+  renderRadio = () => {
     return (
       <Collector
         onBtnGroupClick={this.onBtnGroupClick}
@@ -716,6 +774,7 @@ export default class Map extends Component {
         onStyleChange={this.onStyleChange}
         onCoordInputChange={this.onCoordInputChange}
         onCollectorStartBtn={this.onCollectorStartBtn}
+        onCollectorCollectBtn={this.onCollectorCollectBtn}
         isCollecting={this.state.isCollecting}
       />
     );
@@ -804,6 +863,38 @@ export default class Map extends Component {
       </div>
     );
   }
+}
+
+// Converts to given batchFlowResponse to CSV file
+function convertToCSV(batchFlowData) {
+  if (!batchFlowData) {
+    console.warn("Received null batchFlowData");
+    return;
+  }
+
+  let csv =
+    "TIMESTAMP,LAT,LNG,CONFIDENCE,CURRENT_SPEED,FREEFLOW_SPEED,JAM_FACTOR,FRC\r\n";
+
+  batchFlowData.coordsFlowInfoList.forEach(coordFlow => {
+    csv +=
+      batchFlowData.timestamp +
+      "," +
+      coordFlow.coord.lat +
+      "," +
+      coordFlow.coord.long +
+      "," +
+      coordFlow.confidence +
+      "," +
+      coordFlow.currentSpeed +
+      "," +
+      coordFlow.freeFlowSpeed +
+      "," +
+      coordFlow.jamFactor +
+      "," +
+      coordFlow.frc +
+      "\r\n";
+  });
+  return csv;
 }
 
 var defaultLocations = {
