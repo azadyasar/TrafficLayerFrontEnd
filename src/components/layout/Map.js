@@ -57,8 +57,8 @@ export default class Map extends Component {
       "satellite-v9"
     ];
 
-    axios.defaults.baseURL = "http://avl-trafficflow-v1.herokuapp.com:80";
-    // axios.defaults.baseURL = "http://localhost:5555";
+    // axios.defaults.baseURL = "http://avl-trafficflow-v1.herokuapp.com:80";
+    axios.defaults.baseURL = "http://localhost:5555";
   }
 
   _onViewPortChange = viewport =>

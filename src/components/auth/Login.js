@@ -2,6 +2,7 @@ import React, { Component } from "react";
 import { Redirect } from "react-router-dom";
 import PropTypes from "prop-types";
 import classnames from "classnames";
+import { ToastContainer, toast } from "react-toastify";
 
 export default class Login extends Component {
   constructor() {
@@ -11,6 +12,8 @@ export default class Login extends Component {
       password: "",
       errors: {}
     };
+    this.userName = "avlturkey";
+    this.password = "avltraffic2019";
   }
 
   componentDidMount() {
@@ -39,13 +42,25 @@ export default class Login extends Component {
       errors.password = "Please provide your password.";
     }
 
+    if (this.state.email !== this.userName) {
+      isLoginLegit = false;
+      errors.incorrect_uname = "Wrong username or email";
+    }
+
+    if (this.state.password !== this.password) {
+      isLoginLegit = false;
+      errors.incorrect_pw = "Incorrect password";
+    }
+
     // Call backend API
 
     this.setState({ errors });
 
     if (isLoginLegit) {
-      window.alert("Login successfull. User: " + JSON.stringify(user));
+      // window.alert("Login successfull. User: " + JSON.stringify(user));
       this.props.onLoginClick(event, user);
+    } else {
+      toast.error("Incorrect username or password");
     }
   }
 
@@ -55,6 +70,7 @@ export default class Login extends Component {
     const { errors } = this.state;
     return (
       <div className="login h-100 m-4">
+        <ToastContainer />
         <div className="container-fluid h-100">
           <div className="row h-100">
             <div className="col-md-8 m-auto">
@@ -65,9 +81,13 @@ export default class Login extends Component {
               <form onSubmit={e => this.onSubmit(e)}>
                 <div className="form-group">
                   <input
-                    type="email"
+                    type="text"
+                    formNoValidate
                     className={classnames("form-control form-control-lg", {
-                      "is-invalid": errors.email
+                      "is-invalid":
+                        errors.email ||
+                        errors.incorrect_uname ||
+                        errors.incorrect_pw
                     })}
                     placeholder="Email Address"
                     name="email"
@@ -84,7 +104,10 @@ export default class Login extends Component {
                   <input
                     type="password"
                     className={classnames("form-control form-control-lg", {
-                      "is-invalid": errors.password
+                      "is-invalid":
+                        errors.password ||
+                        errors.incorrect_uname ||
+                        errors.incorrect_pw
                     })}
                     placeholder="Password"
                     name="password"

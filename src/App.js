@@ -27,7 +27,6 @@ class App extends Component {
 
   onLoginClick = event => {
     event.preventDefault();
-    window.alert("Welcome");
     this.setState({
       isAuthorized: true
     });
