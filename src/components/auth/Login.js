@@ -13,7 +13,8 @@ export default class Login extends Component {
       errors: {}
     };
     this.userName = "avlturkey";
-    this.password = "avltraffic2019";
+    // this.password = "avltraffic2019";
+    this.password = "1234";
   }
 
   componentDidMount() {
@@ -82,7 +83,6 @@ export default class Login extends Component {
                 <div className="form-group">
                   <input
                     type="text"
-                    formNoValidate
                     className={classnames("form-control form-control-lg", {
                       "is-invalid":
                         errors.email ||
