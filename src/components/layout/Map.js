@@ -941,8 +941,8 @@ function convertToCSV(batchFlowData, batchWeatherData, datumContent) {
         "," +
         coordFlow.confidence +
         ",";
-      if (requestedFeatureIds["CS"]) csv += coordFlow.currentSpeed + ",";
       if (requestedFeatureIds["FFS"]) csv += coordFlow.freeFlowSpeed + ",";
+      if (requestedFeatureIds["CS"]) csv += coordFlow.currentSpeed + ",";
       if (requestedFeatureIds["JF"]) csv += coordFlow.jamFactor + ",";
       if (requestedFeatureIds["FRC"]) csv += coordFlow.frc + ",";
       if (currentWeatherData.main) {
@@ -980,8 +980,8 @@ function convertToCSV(batchFlowData, batchWeatherData, datumContent) {
         "," +
         coordFlow.confidence +
         ",";
-      if (requestedFeatureIds["CS"]) csv += coordFlow.currentSpeed + ",";
       if (requestedFeatureIds["FFS"]) csv += coordFlow.freeFlowSpeed + ",";
+      if (requestedFeatureIds["CS"]) csv += coordFlow.currentSpeed + ",";
       if (requestedFeatureIds["JF"]) csv += coordFlow.jamFactor + ",";
       if (requestedFeatureIds["FRC"]) csv += coordFlow.frc + ",";
       csv += "\r\n";
