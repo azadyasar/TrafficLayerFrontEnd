@@ -69,9 +69,15 @@ export default class Navbar extends Component {
                 </Link>
               </li>
               <li className="nav-item">
-                <Link className="nav-link" to="/map">
-                  Map
-                </Link>
+                {this.props.isAuthorized ? (
+                  <Link className="nav-link" to="/map">
+                    Map
+                  </Link>
+                ) : (
+                  <Link className="nav-link" to="/login">
+                    Map
+                  </Link>
+                )}
               </li>
             </ul>
             {this.props.isAuthorized ? guestLinks : authLinks}

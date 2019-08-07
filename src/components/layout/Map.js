@@ -11,6 +11,8 @@ const istCoord = {
   longitude: 29.103301
 };
 
+const WEATHER_DISTANCE_THRESHOLD = 1000; // meters
+
 export default class Map extends Component {
   constructor() {
     super();
@@ -27,7 +29,6 @@ export default class Map extends Component {
       savedLocations: turf.featureCollection([]),
       sourceCoord: null,
       destCoord: null,
-      routeLine: null,
       checkpoints: [],
       isCollecting: false
     };
@@ -557,8 +558,6 @@ export default class Map extends Component {
     event.target.classList.add("active");
   };
 
-  onLatLngInputChange = event => {};
-
   onCoordInputChange = (info, isInputCoordInvalid) => {
     console.debug("onCoordInputChange (Map)");
     this.setState({ [info.coordName]: info.coord });
@@ -572,6 +571,9 @@ export default class Map extends Component {
 
   /**
    * Triggered when the user clicks the `Route` button within the Radio tab.
+   * @todo Async operation may try to alter the state of the component via the `setState` method.
+   * Make sure it doesn't call the `setState` method if the component is unmounted.
+   * Cancellable promised
    */
   onCollectorStartBtn = async event => {
     const sourceCoord = this.state.sourceCoord;
@@ -615,6 +617,7 @@ export default class Map extends Component {
   onCollectorCollectBtn = async event => {
     if (!this.routeCoordsGEO) {
       toast.warn("Calculate a route first!");
+      this.setState({ isCollecting: false });
       return;
     }
 
@@ -627,6 +630,11 @@ export default class Map extends Component {
       coordsQueryStr += coord[1] + "," + coord[0] + ",";
     });
 
+    this.weatherRequestPromise = axios.post(
+      "/api/v1/avl/weather/batch",
+      coordsQueryStr
+    );
+
     axios
       .post("/api/v1/avl/batchFlow", coordsQueryStr)
       .then(response => {
@@ -635,23 +643,57 @@ export default class Map extends Component {
         this.setState({ isCollecting: false });
         console.debug("Response: ", response);
 
-        // Download the CSV file
-        const element = document.createElement("a");
-        element.setAttribute(
-          "href",
-          "data:text/plain;charset=utf-8," + convertToCSV(response.data)
-        );
-        element.setAttribute(
-          "download",
-          "AVL_TrafficLayer_" + Date.now() + ".csv"
-        );
-        element.style.display = "none";
-        document.body.appendChild(element);
-        element.click();
-        document.body.removeChild(element);
+        this.weatherRequestPromise
+          .then(batchWeatherResponse => {
+            console.debug("Batch weather response: ");
+            batchWeatherResponse.data.coordsWeatherData.forEach(data =>
+              console.debug(data)
+            );
+            // Download the CSV file
+            const element = document.createElement("a");
+            element.setAttribute(
+              "href",
+              "data:text/plain;charset=utf-8," +
+                convertToCSV(
+                  response.data,
+                  batchWeatherResponse.data,
+                  event.datumContent
+                )
+            );
+            element.setAttribute(
+              "download",
+              "AVL_TrafficLayer_" + Date.now() + ".csv"
+            );
+            element.style.display = "none";
+            document.body.appendChild(element);
+            element.click();
+            document.body.removeChild(element);
+          })
+          .catch(weatherInfoErr => {
+            const element = document.createElement("a");
+            element.setAttribute(
+              "href",
+              "data:text/plain;charset=utf-8," +
+                convertToCSV(response.data, null, event.datumContent)
+            );
+            element.setAttribute(
+              "download",
+              "AVL_TrafficLayer_" + Date.now() + ".csv"
+            );
+            element.style.display = "none";
+            document.body.appendChild(element);
+            element.click();
+            document.body.removeChild(element);
+            console.error(
+              "Error occured during axios get request to /weather/batch",
+              weatherInfoErr
+            );
+            this.setState({ isCollecting: false });
+            toast.error("An error occured during weather data collection");
+          });
       })
       .catch(error => {
-        console.debug(
+        console.error(
           "Error occured during axios get request to /batchFlow",
           error
         );
@@ -773,6 +815,7 @@ export default class Map extends Component {
         onCollectorStartBtn={this.onCollectorStartBtn}
         onCollectorCollectBtn={this.onCollectorCollectBtn}
         isCollecting={this.state.isCollecting}
+        hasRoute={!!this.routeCoordsGEO}
       />
     );
   };
@@ -863,35 +906,123 @@ export default class Map extends Component {
 }
 
 // Converts to given batchFlowResponse to CSV file
-function convertToCSV(batchFlowData) {
+function convertToCSV(batchFlowData, batchWeatherData, datumContent) {
   if (!batchFlowData) {
-    console.warn("Received null batchFlowData");
+    console.warn("Did not receive any information");
     return;
   }
 
-  let csv =
-    "TIMESTAMP,LAT,LNG,CONFIDENCE,CURRENT_SPEED,FREEFLOW_SPEED,JAM_FACTOR,FRC\r\n";
+  let csv = "TIMESTAMP,LAT,LNG,CONFIDENCE";
 
-  batchFlowData.coordsFlowInfoList.forEach(coordFlow => {
-    csv +=
-      batchFlowData.timestamp +
-      "," +
-      coordFlow.coord.lat +
-      "," +
-      coordFlow.coord.long +
-      "," +
-      coordFlow.confidence +
-      "," +
-      coordFlow.currentSpeed +
-      "," +
-      coordFlow.freeFlowSpeed +
-      "," +
-      coordFlow.jamFactor +
-      "," +
-      coordFlow.frc +
-      "\r\n";
+  const requestedFeatureIds = {};
+  datumContent.requestedFeatures.forEach(requestedFeature => {
+    if (requestedFeature.isChecked) {
+      csv += `,${requestedFeature.csvColumnName}`;
+      requestedFeatureIds[requestedFeature.id] = 1;
+    }
   });
+  csv += "\r\n";
+
+  // csv +=",CURRENT_SPEED,FREEFLOW_SPEED,JAM_FACTOR,FRC\r\n";
+  // @todo Should we check if the requested attribute is set for all of the rows?
+  // better to transfer the all data into a predefined container and iterate through it
+
+  if (batchWeatherData && batchWeatherData.coordsWeatherData) {
+    let currentWeatherData = batchWeatherData.coordsWeatherData[0];
+    let currentWeatherDataIdx = 0;
+
+    batchFlowData.coordsFlowInfoList.forEach(coordFlow => {
+      csv +=
+        batchFlowData.timestamp +
+        "," +
+        coordFlow.coord.lat +
+        "," +
+        coordFlow.coord.long +
+        "," +
+        coordFlow.confidence +
+        ",";
+      if (requestedFeatureIds["FFS"]) csv += coordFlow.freeFlowSpeed + ",";
+      if (requestedFeatureIds["CS"]) csv += coordFlow.currentSpeed + ",";
+      if (requestedFeatureIds["JF"]) csv += coordFlow.jamFactor + ",";
+      if (requestedFeatureIds["FRC"]) csv += coordFlow.frc + ",";
+      if (currentWeatherData.main) {
+        if (requestedFeatureIds["TEMP"])
+          csv += currentWeatherData.main.temp + ",";
+        if (requestedFeatureIds["HUM"])
+          csv += currentWeatherData.main.hum + ",";
+      }
+      csv += "\r\n";
+      if (
+        currentWeatherDataIdx + 1 <
+        batchWeatherData.coordsWeatherData.length
+      ) {
+        if (
+          getDistance(
+            batchWeatherData.coordsWeatherData[currentWeatherDataIdx + 1].coord,
+            coordFlow.coord
+          ) < getDistance(currentWeatherData.coord, coordFlow.coord)
+        ) {
+          console.debug("Found a closer point.");
+          currentWeatherData =
+            batchWeatherData.coordsWeatherData[currentWeatherDataIdx + 1];
+          currentWeatherDataIdx = currentWeatherDataIdx + 1;
+        }
+      }
+    });
+  } else {
+    batchFlowData.coordsFlowInfoList.forEach(coordFlow => {
+      csv +=
+        batchFlowData.timestamp +
+        "," +
+        coordFlow.coord.lat +
+        "," +
+        coordFlow.coord.long +
+        "," +
+        coordFlow.confidence +
+        ",";
+      if (requestedFeatureIds["FFS"]) csv += coordFlow.freeFlowSpeed + ",";
+      if (requestedFeatureIds["CS"]) csv += coordFlow.currentSpeed + ",";
+      if (requestedFeatureIds["JF"]) csv += coordFlow.jamFactor + ",";
+      if (requestedFeatureIds["FRC"]) csv += coordFlow.frc + ",";
+      csv += "\r\n";
+    });
+  }
+
   return csv;
+}
+
+function floatingNumberEquals(f1, f2) {
+  return Math.abs(f1 - f2) < Number.EPSILON;
+}
+
+const EARTH_RADIUS = 6371 * 1000; // in meters
+
+/**
+ * Given two coordinates returns the distance between them in meters.
+ * Makes use of the Haversine formula
+ * @param {Coordinate} coord1 - Source/First/Starting coordinate
+ * @param {Coordinate} coord2 - Destination/Second/Ending coordinate
+ * @returns {number} - Returns the distance between the given two coordinates
+ * in meters.
+ */
+function getDistance(coord1, coord2) {
+  let latRadius = convertDegreeToRadians(coord2.lat - coord1.lat);
+  let longRadius = convertDegreeToRadians(coord2.long - coord1.long);
+  let latRadiusSin = Math.sin(latRadius / 2);
+  let longRadiusSin = Math.sin(longRadius / 2);
+
+  let a =
+    latRadiusSin * latRadiusSin +
+    Math.cos(convertDegreeToRadians(coord1.lat)) *
+      Math.cos(convertDegreeToRadians(coord2.lat)) *
+      longRadiusSin *
+      longRadiusSin;
+  let c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return EARTH_RADIUS * c;
+}
+
+function convertDegreeToRadians(degree) {
+  return degree * (Math.PI / 180);
 }
 
 var defaultLocations = {

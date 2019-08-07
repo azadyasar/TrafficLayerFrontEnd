@@ -27,7 +27,6 @@ class App extends Component {
 
   onLoginClick = event => {
     event.preventDefault();
-    window.alert("Welcome");
     this.setState({
       isAuthorized: true
     });
@@ -111,7 +110,18 @@ class App extends Component {
             <Route
               exact
               path="/map"
-              render={routeProps => <Map {...routeProps} />}
+              render={routeProps =>
+                this.state.isAuthorized ? (
+                  <Map {...routeProps} />
+                ) : (
+                  <Login
+                    {...routeProps}
+                    isAuthorized={this.setState.isAuthorized}
+                    onLoginClick={this.onLoginClick}
+                    onLogoutClick={this.onLogoutClick}
+                  />
+                )
+              }
             />
           </div>
         </div>
