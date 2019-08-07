@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import mapboxgl from "mapbox-gl";
 import Collector from "./Collector";
 import axios from "axios";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 const turf = require("@turf/turf");
 
 const istCoord = {
@@ -794,7 +794,7 @@ export default class Map extends Component {
         </div>
         <div className="row no-pm">
           {/* SIDEBAR TABS */}
-          <div className="col-3 no-pm sidebar">
+          <div className="col-lg-3 col-md-5 col-sm-6 no-pm sidebar">
             <div className="row justify-content-center no-pm w-100">
               <div
                 id="tab-btn-group"
@@ -849,7 +849,7 @@ export default class Map extends Component {
           </div>
 
           {/* MAP */}
-          <div className="col-9 no-pm">
+          <div className="col-lg-9 col-md-6 col-sm-6 no-pm">
             <div
               id="map"
               ref={el => (this.mapContainer = el)}

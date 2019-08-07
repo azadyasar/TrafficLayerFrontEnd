@@ -36,11 +36,11 @@ export default class Navbar extends Component {
     );
 
     return (
-      <nav className="navbar navbarcustom navbar-expand-sm navbar-dark bg-dark ">
-        <Link className="navbar-brand-logo" to="/">
+      <nav className="navbar navbar-expand-sm navbar-dark bg-dark ">
+        <Link className="navbar-brand-logo align-self-start" align="left" to="/">
           <img src={require("../../img/avl.png")} alt="" />
         </Link>
-        <div className="container">
+        
           <Link className="navbar-brand" to="/">
             Home
           </Link>
@@ -48,12 +48,15 @@ export default class Navbar extends Component {
             className="navbar-toggler"
             type="button"
             data-toggle="collapse"
-            data-target="#mobile-nav"
+            data-target="#navbarNav"
+            aria-controls="navbarNavDropdown"
+            aria-expanded="false"
+            aria-label="Toggle navigation"
           >
             <span className="navbar-toggler-icon" />
           </button>
 
-          <div className="collapse navbar-collapse" id="mobile-nav">
+          <div className="collapse navbar-collapse" id="navbarNav">
             <ul className="navbar-nav mr-auto">
               <li className="nav-item">
                 <Link className="nav-link" to="/">
@@ -73,7 +76,6 @@ export default class Navbar extends Component {
             </ul>
             {this.props.isAuthorized ? guestLinks : authLinks}
           </div>
-        </div>
       </nav>
     );
   }
