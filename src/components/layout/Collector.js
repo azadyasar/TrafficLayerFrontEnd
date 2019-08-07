@@ -42,7 +42,7 @@ export default class Collector extends Component {
             value: "Functional Road Class",
             isChecked: false,
             disabled: false,
-            csvColumnName: "CSV"
+            csvColumnName: "FRC"
           },
           {
             id: "TEMP",
