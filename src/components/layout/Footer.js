@@ -6,7 +6,7 @@ export default () => {
       {" "}
       <div className="row">
         <div className="footer-col col-md-12 py-3">
-          © 2019 Copyright: AVL Research and Engineering Turkey v0.8.0
+          © 2019 Copyright: AVL Research and Engineering Turkey v0.9.0
         </div>{" "}
       </div>
     </footer>

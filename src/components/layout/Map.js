@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import mapboxgl from "mapbox-gl";
 import Collector from "./Collector";
 import axios from "axios";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 const turf = require("@turf/turf");
 
 const istCoord = {
@@ -79,6 +79,9 @@ export default class Map extends Component {
       zoom: 8
     });
     this.mapCanvas = this.map.getCanvasContainer();
+
+    this.map.addControl(new mapboxgl.FullscreenControl(), "bottom-right");
+    this.map.addControl(new mapboxgl.GeolocateControl(), "bottom-right");
 
     this.map.on("style.load", e => {
       console.debug("Style.load event");
@@ -643,12 +646,13 @@ export default class Map extends Component {
         this.setState({ isCollecting: false });
         console.debug("Response: ", response);
 
+
         this.weatherRequestPromise
           .then(batchWeatherResponse => {
             console.debug("Batch weather response: ");
-            batchWeatherResponse.data.coordsWeatherData.forEach(data =>
+/*             batchWeatherResponse.data.coordsWeatherData.forEach(data =>
               console.debug(data)
-            );
+            ); */
             // Download the CSV file
             const element = document.createElement("a");
             element.setAttribute(
@@ -837,7 +841,7 @@ export default class Map extends Component {
         </div>
         <div className="row no-pm">
           {/* SIDEBAR TABS */}
-          <div className="col-3 no-pm sidebar">
+          <div className="col-lg-3 col-md-5 col-sm-5 no-pm sidebar">
             <div className="row justify-content-center no-pm w-100">
               <div
                 id="tab-btn-group"
@@ -892,7 +896,7 @@ export default class Map extends Component {
           </div>
 
           {/* MAP */}
-          <div className="col-9 no-pm">
+          <div className="col-lg-9 col-md-6 col-sm-6 no-pm">
             <div
               id="map"
               ref={el => (this.mapContainer = el)}
@@ -912,6 +916,16 @@ function convertToCSV(batchFlowData, batchWeatherData, datumContent) {
     return;
   }
 
+  if (!batchFlowData.coordsFlowInfoList) {
+    console.warn("Did not receive any information");
+    return;
+  }
+
+  if (batchFlowData.coordsFlowInfoList.length === 0) {
+    console.warn("Did not receive any information");
+    return;
+  }
+
   let csv = "TIMESTAMP,LAT,LNG,CONFIDENCE";
 
   const requestedFeatureIds = {};
@@ -922,6 +936,8 @@ function convertToCSV(batchFlowData, batchWeatherData, datumContent) {
     }
   });
   csv += "\r\n";
+
+  const sourceCoord = { lat: batchFlowData.coordsFlowInfoList[0].coord.lat, long: batchFlowData.coordsFlowInfoList[0].coord.long }
 
   // csv +=",CURRENT_SPEED,FREEFLOW_SPEED,JAM_FACTOR,FRC\r\n";
   // @todo Should we check if the requested attribute is set for all of the rows?
@@ -950,6 +966,7 @@ function convertToCSV(batchFlowData, batchWeatherData, datumContent) {
           csv += currentWeatherData.main.temp + ",";
         if (requestedFeatureIds["HUM"])
           csv += currentWeatherData.main.hum + ",";
+      if (requestedFeatureIds["CUM_DIST"]) csv += getDistance(sourceCoord, coordFlow.coord)
       }
       csv += "\r\n";
       if (
@@ -984,6 +1001,7 @@ function convertToCSV(batchFlowData, batchWeatherData, datumContent) {
       if (requestedFeatureIds["CS"]) csv += coordFlow.currentSpeed + ",";
       if (requestedFeatureIds["JF"]) csv += coordFlow.jamFactor + ",";
       if (requestedFeatureIds["FRC"]) csv += coordFlow.frc + ",";
+      if (requestedFeatureIds["CUM_DIST"]) csv += getDistance(sourceCoord, coordFlow.coord)
       csv += "\r\n";
     });
   }
