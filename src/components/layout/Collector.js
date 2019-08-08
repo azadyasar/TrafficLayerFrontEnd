@@ -16,7 +16,7 @@ export default class Collector extends Component {
             id: "FFS",
             liKey: 1,
             value: "Free Flow Speed",
-            isChecked: false,
+            isChecked: true,
             disabled: false,
             csvColumnName: "FREE_FLOW_SPEED"
           },
@@ -24,7 +24,7 @@ export default class Collector extends Component {
             id: "CS",
             liKey: 2,
             value: "Current Speed",
-            isChecked: false,
+            isChecked: true,
             disabled: false,
             csvColumnName: "CURRENT_SPEED"
           },
@@ -32,7 +32,7 @@ export default class Collector extends Component {
             id: "JF",
             liKey: 3,
             value: "Jam Factor",
-            isChecked: false,
+            isChecked: true,
             disabled: false,
             csvColumnName: "JAM_FACTOR"
           },
@@ -40,7 +40,7 @@ export default class Collector extends Component {
             id: "FRC",
             liKey: 4,
             value: "Functional Road Class",
-            isChecked: false,
+            isChecked: true,
             disabled: false,
             csvColumnName: "CSV"
           },
@@ -48,7 +48,7 @@ export default class Collector extends Component {
             id: "TEMP",
             liKey: 5,
             value: "Temperature",
-            isChecked: false,
+            isChecked: true,
             disabled: false,
             csvColumnName: "TEMP"
           },
@@ -56,9 +56,18 @@ export default class Collector extends Component {
             id: "HUM",
             liKey: 6,
             value: "Humidity",
-            isChecked: false,
+            isChecked: true,
             disabled: false,
             csvColumnName: "HUM"
+          },
+          {
+            id: "CUM_DIST",
+            liKey: 7,
+            value: "Cum. Distance",
+            isChecked: true,
+            disabled: false,
+            csvColumnName: "CUM_DIST"
+
           }
         ]
       }

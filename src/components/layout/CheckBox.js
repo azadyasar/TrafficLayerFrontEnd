@@ -6,9 +6,8 @@ export const CheckBox = props => {
       <div className="form-check">
         <input
           id={props.id}
-          // onChange={props.handleCheckChildElement}
           type="checkbox"
-          // checked={props.isChecked}
+          checked={props.isChecked}
           onChange={props.onCheckboxChange}
           value={props.value}
           disabled={props.disabled}
