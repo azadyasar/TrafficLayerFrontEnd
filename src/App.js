@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Route } from "react-router-dom";
 import "../node_modules/mapbox-gl/src/css/mapbox-gl.css";
 import "./App.css";
 import "react-toastify/dist/ReactToastify.css";
+import "mapbox-gl/src/css/mapbox-gl.css";
 
 import Navbar from "./components/layout/Navbar";
 import Footer from "./components/layout/Footer";
@@ -27,7 +28,6 @@ class App extends Component {
 
   onLoginClick = event => {
     event.preventDefault();
-    window.alert("Welcome");
     this.setState({
       isAuthorized: true
     });
@@ -111,7 +111,18 @@ class App extends Component {
             <Route
               exact
               path="/map"
-              render={routeProps => <Map {...routeProps} />}
+              render={routeProps =>
+                this.state.isAuthorized ? (
+                  <Map {...routeProps} />
+                ) : (
+                  <Login
+                    {...routeProps}
+                    isAuthorized={this.setState.isAuthorized}
+                    onLoginClick={this.onLoginClick}
+                    onLogoutClick={this.onLogoutClick}
+                  />
+                )
+              }
             />
           </div>
         </div>

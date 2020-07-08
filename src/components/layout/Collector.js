@@ -3,12 +3,74 @@ import PropTypes from "prop-types";
 import classnames from "classnames";
 import { ToastContainer, toast } from "react-toastify";
 import { ClimbingBoxLoader } from "react-spinners";
+import { CheckBox } from "./CheckBox";
 
 export default class Collector extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      isCollecting: false
+      isCollecting: false,
+      datumContent: {
+        requestedFeatures: [
+          {
+            id: "FFS",
+            liKey: 1,
+            value: "Free Flow Speed",
+            isChecked: true,
+            disabled: false,
+            csvColumnName: "FREE_FLOW_SPEED"
+          },
+          {
+            id: "CS",
+            liKey: 2,
+            value: "Current Speed",
+            isChecked: true,
+            disabled: false,
+            csvColumnName: "CURRENT_SPEED"
+          },
+          {
+            id: "JF",
+            liKey: 3,
+            value: "Jam Factor",
+            isChecked: true,
+            disabled: false,
+            csvColumnName: "JAM_FACTOR"
+          },
+          {
+            id: "FRC",
+            liKey: 4,
+            value: "Functional Road Class",
+            isChecked: true,
+            disabled: false,
+            csvColumnName: "FRC"
+          },
+          {
+            id: "TEMP",
+            liKey: 5,
+            value: "Temperature",
+            isChecked: true,
+            disabled: false,
+            csvColumnName: "TEMP"
+          },
+          {
+            id: "HUM",
+            liKey: 6,
+            value: "Humidity",
+            isChecked: true,
+            disabled: false,
+            csvColumnName: "HUM"
+          },
+          {
+            id: "CUM_DIST",
+            liKey: 7,
+            value: "Cum. Distance",
+            isChecked: true,
+            disabled: false,
+            csvColumnName: "CUM_DIST"
+
+          }
+        ]
+      }
     };
 
     this.currentBtnGroupIndex = 0;
@@ -153,6 +215,7 @@ export default class Collector extends Component {
     }
     this.setState({ isCollecting: true });
     e.preventDefault();
+    e.datumContent = this.state.datumContent;
     this.props.onCollectorCollectBtn(e);
     const toastElement = document.getElementById("toast");
     const toastText = toastElement.getElementsByClassName("desc")[0];
@@ -163,6 +226,22 @@ export default class Collector extends Component {
         toastElement.className = toastElement.className.replace("show", "");
       }, 5000);
     }
+  };
+
+  onChildCheckboxChange = e => {
+    console.log(e);
+    console.log(e.target);
+    const datumContent = Object.assign({}, this.state.datumContent);
+    // @TODO Replace shallow copy with a deep copy here.
+    const requestedFeaturesTmp = datumContent.requestedFeatures;
+    for (let i = 0; i < requestedFeaturesTmp.length; i++) {
+      if (requestedFeaturesTmp[i].id === e.target.id) {
+        console.debug("Match: ", requestedFeaturesTmp[i]);
+        requestedFeaturesTmp[i].isChecked = !requestedFeaturesTmp[i].isChecked;
+        break;
+      }
+    }
+    this.setState(datumContent);
   };
 
   render() {
@@ -362,7 +441,7 @@ export default class Collector extends Component {
                 Use custom resolution
               </label>
             </div> */}
-            <div className="row text-center justify-content-center no-pm mt-4">
+            <div className="row text-center justify-content-center no-pm mt-1">
               <button
                 className={classnames("btn btn-primary m-1 cl-6", {
                   disabled: this.state.isCollecting
@@ -391,6 +470,19 @@ export default class Collector extends Component {
                 color={"#123abc"}
                 loading={this.state.isCollecting}
               />
+            </div>
+            <div className="row justify-content-center no-pm mt-4">
+              {/* <ul style={{ listStyle: "none" }}> */}
+              {this.state.datumContent.requestedFeatures.map(feature => {
+                return (
+                  <CheckBox
+                    key={feature.liKey}
+                    {...feature}
+                    onCheckboxChange={this.onChildCheckboxChange}
+                  />
+                );
+              })}
+              {/* </ul> */}
             </div>
           </div>
         </form>
